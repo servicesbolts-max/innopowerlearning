@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+.next
+coverage
+test-results
+playwright-report
+.lighthouseci
+src/db/migrations/meta
+docs/MASTER_PROMPT.md
