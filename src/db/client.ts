@@ -9,7 +9,10 @@ import { env } from "@/lib/env";
 let sql: postgres.Sql | undefined;
 
 export function getSql(): postgres.Sql {
-  sql ??= postgres(env().DATABASE_URL, {
+  const e = env();
+  sql ??= postgres(e.DATABASE_URL, {
+    // TLS is mandatory outside development; the URL's sslmode still applies elsewhere.
+    ...(e.APP_ENV === "production" || e.APP_ENV === "staging" ? { ssl: "require" as const } : {}),
     max: 10,
     idle_timeout: 20,
     connect_timeout: 5,

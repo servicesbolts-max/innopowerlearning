@@ -39,16 +39,31 @@ export function checkEdit(filePath, root, inHead = existsInHead) {
   return null;
 }
 
+/** Reads, searches and globs: only .env files are off limits (committed migrations may be read). */
+export function checkRead(input, root, toolName = "Read") {
+  // Grep's `pattern` is a content regex, not a path; Glob's `pattern` is a path glob.
+  const paths = [input.file_path, input.path, input.glob];
+  if (toolName === "Glob") paths.push(input.pattern);
+  for (const value of paths) {
+    if (typeof value !== "string" || !value) continue;
+    const base = value.split(/[\\/]/).pop() ?? "";
+    const candidate = /[*?[]/.test(value) ? base : toRepoPath(value, root);
+    if (isEnvFile(candidate) || /^\.env\*?$/.test(base)) {
+      return `${value} targets environment files. Never read .env* files.`;
+    }
+  }
+  return null;
+}
+
 if (isMain(import.meta.url)) {
   const payload = readPayload();
-  const filePath = payload.tool_input?.file_path ?? payload.tool_input?.notebook_path;
+  if (payload === null || typeof payload.tool_input !== "object" || payload.tool_input === null) {
+    block("unreadable hook payload (failing closed).");
+  }
+  const input = payload.tool_input;
   const root = projectDir(payload);
-  // Reads are only checked for .env files; reading committed migrations is fine.
-  const reason =
-    payload.tool_name === "Read"
-      ? filePath && isEnvFile(toRepoPath(filePath, root))
-        ? `${toRepoPath(filePath, root)} is an environment file. Never read .env* files.`
-        : null
-      : checkEdit(filePath, root);
+  const reason = ["Read", "Grep", "Glob"].includes(payload.tool_name)
+    ? checkRead(input, root, payload.tool_name)
+    : checkEdit(input.file_path ?? input.notebook_path, root);
   if (reason) block(reason);
 }

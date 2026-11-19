@@ -1,17 +1,17 @@
 import postgres from "postgres";
-import { describeError, scriptEnv } from "./load-env";
+import { describeError, ownerUrl, scriptEnv } from "./load-env";
 import { assertLocalDatabase } from "../src/db/seed-guard";
 
 const e = scriptEnv("db:reset");
 
 try {
-  assertLocalDatabase(e.DATABASE_URL, e.APP_ENV);
+  assertLocalDatabase(ownerUrl(e, "db:reset"), process.env);
 } catch (error) {
   console.error(`db:reset: ${(error as Error).message}`);
   process.exit(1);
 }
 
-const sql = postgres(e.DATABASE_URL, { max: 1, onnotice: () => {} });
+const sql = postgres(ownerUrl(e, "db:reset"), { max: 1, onnotice: () => {} });
 try {
   // Local development only (guarded above): recreate the public schema.
   await sql.unsafe(`drop schema if exists public cascade; create schema public;`);

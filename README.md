@@ -14,7 +14,7 @@ A multi-tenant learning platform for Innopower AI and its partners. One codebase
 
 ```bash
 pnpm i
-cp .env.example .env          # Option B: set DATABASE_URL to your hosted URL instead
+cp .env.example .env          # Option B: set the two database URLs to your hosted ones
 docker compose up -d          # Option A only
 pnpm db:migrate
 pnpm db:seed
@@ -28,9 +28,10 @@ Local services (Option A): Postgres `localhost:5432`, Redis `6379`, MinIO API `9
 ### Option B: hosted development Postgres
 
 1. Create a free project on Neon or Supabase.
-2. Copy the **direct** (non-pooled) connection string into `DATABASE_URL` in `.env`, keeping `sslmode=require`.
-3. Run `pnpm db:migrate`. The first migration enables `vector`, `pg_trgm` and `citext`, and creates the `app_user` and `app_platform` roles.
-4. `pnpm db:reset` refuses non-local hosts by design. To start over, reset the branch in the provider's dashboard.
+2. Copy the **direct** (non-pooled) owner connection string into `DATABASE_OWNER_URL` in `.env`, keeping `sslmode=require`.
+3. Pick a password for the app's restricted login. Put it in `APP_DB_PASSWORD`, and set `DATABASE_URL` to the same host with user `app_login` and that password.
+4. Run `pnpm db:migrate`. It enables `vector`, `pg_trgm` and `citext`, creates the `app_user`, `app_platform` and `app_login` roles, and sets the `app_login` password.
+5. `pnpm db:reset` refuses non-local hosts by design. To start over, reset the branch in the provider's dashboard.
 
 Tenant hosts (from P2) use `{slug}.localhost:3000`. `lvh.me:3000` works too if your browser does not resolve `*.localhost`.
 
@@ -42,7 +43,7 @@ Tenant hosts (from P2) use `{slug}.localhost:3000`. `lvh.me:3000` works too if y
 | `pnpm build` / `pnpm start`                | Production build and serve                    |
 | `pnpm lint` / `pnpm typecheck`             | ESLint (zero warnings) and TypeScript         |
 | `pnpm test`                                | Unit tests (Vitest)                           |
-| `pnpm test:integration`                    | Integration tests against `DATABASE_URL`      |
+| `pnpm test:integration`                    | Integration tests (owner and runtime URLs)    |
 | `pnpm e2e`                                 | Playwright with axe (starts the dev server)   |
 | `pnpm db:migrate` / `db:seed` / `db:reset` | Database lifecycle (`db:reset` is local only) |
 | `pnpm gate`                                | Quality gate: lint, typecheck, test, build    |

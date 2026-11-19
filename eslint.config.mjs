@@ -96,6 +96,36 @@ export default defineConfig([
       ],
     },
   },
+  {
+    // Only the tenancy module (withTenant) may touch the raw connection. Everything else
+    // imports withTenant from "@/modules/tenancy" and table definitions from "@/db/schema".
+    files: ["src/modules/**/*.{ts,tsx}"],
+    ignores: ["src/modules/tenancy/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@/db",
+              importNames: ["getSql", "getDb", "closeDb"],
+              message: "Use withTenant from '@/modules/tenancy'; only tenancy opens connections.",
+            },
+          ],
+          patterns: [
+            {
+              group: ["@/db/client", "**/db/client"],
+              message: "Use withTenant from '@/modules/tenancy'; only tenancy opens connections.",
+            },
+            {
+              group: ["@/modules/*/*", "**/modules/*/*"],
+              message: "Import a module through its public index.ts (e.g. '@/modules/tenancy').",
+            },
+          ],
+        },
+      ],
+    },
+  },
   globalIgnores([
     ".next/**",
     "out/**",

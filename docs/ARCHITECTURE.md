@@ -30,6 +30,15 @@ flowchart LR
 | `src/db`            | db, lib                                            |
 | `src/lib`           | lib                                                |
 
+## Database roles
+
+| Role                         | Login | Used by                         | Can do                                                 |
+| ---------------------------- | ----- | ------------------------------- | ------------------------------------------------------ |
+| owner (`DATABASE_OWNER_URL`) | yes   | `scripts/db-*.ts`, tests        | owns every object; runs migrations                     |
+| `app_login` (`DATABASE_URL`) | yes   | the app                         | nothing on its own; may `set role` to the two below    |
+| `app_user`                   | no    | `withTenant`                    | table grants; subject to forced RLS on `app.tenant_id` |
+| `app_platform`               | no    | audited Super Admin paths (P11) | explicit platform policies; no BYPASSRLS               |
+
 ## Isolation layers
 
 1. Host-based tenant resolution in the proxy (P2).

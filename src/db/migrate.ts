@@ -33,6 +33,7 @@ export async function listMigrationFiles(dir = MIGRATIONS_DIR): Promise<string[]
 /**
  * Applies pending SQL migrations in filename order, each in its own transaction, under an
  * advisory lock. Already-applied migrations are verified by checksum and never re-run.
+ * Must run on the owner connection (DATABASE_OWNER_URL).
  */
 export async function runMigrations(
   sql: postgres.Sql,
@@ -70,4 +71,15 @@ export async function runMigrations(
     await sql`select pg_advisory_unlock(${LOCK_KEY})`;
   }
   return result;
+}
+
+/**
+ * Sets the app_login password. ALTER ROLE cannot take bind parameters, so the statement is
+ * built server-side with format('%L'), which quotes the literal safely.
+ */
+export async function setRuntimeLoginPassword(sql: postgres.Sql, password: string): Promise<void> {
+  const [row] = await sql<{ stmt: string }[]>`
+    select format('alter role app_login with password %L', ${password}::text) as stmt`;
+  if (!row) throw new Error("could not build the ALTER ROLE statement");
+  await sql.unsafe(row.stmt);
 }

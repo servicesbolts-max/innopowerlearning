@@ -20,6 +20,18 @@ export function scriptEnv(script: string): ServerEnv {
   }
 }
 
+/** The owner/migrator URL. Scripts that change schema or data need it; the app never does. */
+export function ownerUrl(e: ServerEnv, script: string): string {
+  if (!e.DATABASE_OWNER_URL) {
+    console.error(
+      `${script}: DATABASE_OWNER_URL is not set. It is the owner/migrator connection ` +
+        `(see .env.example); DATABASE_URL is the restricted runtime login.`,
+    );
+    process.exit(1);
+  }
+  return e.DATABASE_OWNER_URL;
+}
+
 /** Turns driver and validation errors into one actionable line (never prints secrets). */
 export function describeError(error: unknown): string {
   if (error instanceof EnvValidationError) {

@@ -26,19 +26,35 @@ describe("assertSeedAllowed", () => {
 });
 
 describe("assertLocalDatabase", () => {
-  it("allows localhost in development", () => {
-    expect(() =>
-      assertLocalDatabase("postgres://u:p@localhost:5432/db", "development"),
-    ).not.toThrow();
+  const dev = { APP_ENV: "development" };
+  const local = "postgres://u:p@localhost:5432/db";
+
+  it("allows localhost with APP_ENV=development set explicitly", () => {
+    expect(() => assertLocalDatabase(local, dev)).not.toThrow();
+    expect(() => assertLocalDatabase("postgres://u:p@127.0.0.1/db", dev)).not.toThrow();
   });
 
-  it("refuses a hosted database", () => {
-    expect(() => assertLocalDatabase("postgresql://u:p@ep-x.neon.tech/db", "development")).toThrow(
+  it("refuses when APP_ENV is unset (the parsed default must not count)", () => {
+    expect(() => assertLocalDatabase(local, {})).toThrow(/APP_ENV=\(unset\)/);
+  });
+
+  it("refuses NODE_ENV=production even with APP_ENV=development", () => {
+    expect(() => assertLocalDatabase(local, { ...dev, NODE_ENV: "production" })).toThrow(
       /Refusing/,
     );
   });
 
+  it("refuses hosted databases and container service names", () => {
+    for (const url of [
+      "postgresql://u:p@ep-x.neon.tech/db",
+      "postgres://u:p@postgres:5432/db",
+      "postgres://u:p@db.internal/db",
+    ]) {
+      expect(() => assertLocalDatabase(url, dev)).toThrow(/Refusing/);
+    }
+  });
+
   it("refuses localhost outside development", () => {
-    expect(() => assertLocalDatabase("postgres://u:p@localhost/db", "staging")).toThrow(/Refusing/);
+    expect(() => assertLocalDatabase(local, { APP_ENV: "staging" })).toThrow(/Refusing/);
   });
 });

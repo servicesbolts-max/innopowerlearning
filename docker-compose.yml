@@ -1,5 +1,5 @@
 # Local development services. Start with: docker compose up -d
-# Credentials below are local-only development defaults, never used outside this machine.
+# Credentials below are local-only development defaults. Ports bind to 127.0.0.1 only.
 name: innopower-learn
 
 services:
@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: innopower_dev
       POSTGRES_DB: innopower
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -24,7 +24,7 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -39,8 +39,8 @@ services:
       MINIO_ROOT_USER: innopower
       MINIO_ROOT_PASSWORD: innopower_dev
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - miniodata:/data
     healthcheck:
@@ -63,8 +63,8 @@ services:
     image: axllent/mailpit:latest
     restart: unless-stopped
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
 
 volumes:
   pgdata:

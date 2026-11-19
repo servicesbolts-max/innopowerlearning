@@ -1,4 +1,4 @@
-import { getSql } from "@/db";
+import { pingDatabase } from "@/modules/tenancy";
 
 export type CheckStatus = "ok" | "fail";
 
@@ -9,17 +9,13 @@ export interface ReadinessReport {
 
 /** Readiness: can this instance serve traffic? Never includes error details or secrets. */
 export async function checkReadiness(
-  pingDatabase: () => Promise<void> = defaultPing,
+  ping: () => Promise<void> = pingDatabase,
 ): Promise<ReadinessReport> {
   let database: CheckStatus = "ok";
   try {
-    await pingDatabase();
+    await ping();
   } catch {
     database = "fail";
   }
   return { status: database === "ok" ? "ok" : "fail", checks: { database } };
-}
-
-async function defaultPing(): Promise<void> {
-  await getSql()`select 1`;
 }
