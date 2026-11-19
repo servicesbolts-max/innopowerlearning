@@ -20,3 +20,4 @@ Decisions made while building, so they can be reviewed and reversed. Newest at t
 - **CI evidence:** no GitHub remote yet, and Claude may not push. The workflow is schema-validated, and each CI command is run locally. The first remote run happens when the owner pushes.
 - **Docker image tags:** Postgres (`pgvector/pgvector:pg17`) and Redis (`redis:7-alpine`) are pinned. MinIO and Mailpit use `latest` for local development only.
 - **Lighthouse CI** assertions are `warn` until P14, when they become `error`.
+- **Spec conflict for P1:** Section 7.2 `--label-secondary` (light `rgba(60,60,67,.60)`) composites to #8A8A8E on white, which is 3.43:1. That fails WCAG AA (4.5:1) for body text; axe caught it in the P0 smoke test. The hub page uses `--label` for body text. P1 must either restrict the secondary label to large or non-essential text, or darken it until it passes.
