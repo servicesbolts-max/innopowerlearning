@@ -26,6 +26,7 @@
   --color-separator: var(--separator);
   --color-control-border: var(--control-border);
   --color-thumb: var(--thumb);
+  --color-scrim: var(--scrim);
   --color-fill: var(--fill);
 
   /* Accent (tenant) */
@@ -197,7 +198,8 @@
 
 /* Translucent material for bars, sidebars and sheets (Section 7.3). */
 @utility material {
-  background-color: color-mix(in srgb, var(--bg) 72%, transparent);
+  /* --material-alpha is 72% (spec) or higher when the engine needs it for text contrast. */
+  background-color: color-mix(in srgb, var(--bg) var(--material-alpha, 72%), transparent);
   backdrop-filter: saturate(180%) blur(20px);
   @supports not (backdrop-filter: blur(1px)) {
     background-color: var(--bg);

@@ -65,6 +65,16 @@ export interface BuiltTheme {
   report: ContrastCheck[];
 }
 
+/** Spec material opacity; the engine only ever raises it. */
+const MATERIAL_MIN_ALPHA = 0.72;
+
+/** Read back a color this module emitted (hex or rgba()). */
+function fromCssColor(value: string): Rgba {
+  if (value.startsWith("#")) return parseHex(value);
+  const [r = 0, g = 0, b = 0, a = 1] = (value.match(/[\d.]+/g) ?? []).map(Number);
+  return { r, g, b, a };
+}
+
 const minContrast = (fg: Rgba, bgs: Rgba[]) => Math.min(...bgs.map((bg) => contrast(fg, bg)));
 
 /**
@@ -185,6 +195,7 @@ function schemeVars(theme: TenantTheme, scheme: Scheme): AccentVars {
     "--separator": toCss(s.separator),
     "--control-border": toCss(s.controlBorder),
     "--thumb": toCss(s.thumb),
+    "--scrim": toCss(s.scrim),
     "--fill": toCss(s.fill),
     "--elevation": SHADOWS[scheme],
   };
@@ -199,6 +210,27 @@ function schemeVars(theme: TenantTheme, scheme: Scheme): AccentVars {
   const primary = accentVars("accent", accent, scheme, theme.onAccent, "accent");
   Object.assign(vars, primary.vars);
   report.push(...primary.report);
+
+  // Translucent bars (Section 7.3): the spec's 72% material, raised until bar text still reaches
+  // 4.5:1 when the darkest (light) or lightest (dark) possible content scrolls underneath.
+  const worstContent = scheme === "light" ? BLACK : WHITE;
+  const barText = [s.label, s.labelSecondary, fromCssColor(primary.vars["--accent-text"]!)];
+  let materialAlpha = MATERIAL_MIN_ALPHA;
+  const materialBg = (a: number) => composite(rgba(s.bg.r, s.bg.g, s.bg.b, a), worstContent);
+  while (
+    materialAlpha < 1 &&
+    barText.some((c) => contrast(c, materialBg(materialAlpha)) < MIN_CONTRAST)
+  ) {
+    materialAlpha = Math.round((materialAlpha + 0.01) * 100) / 100;
+  }
+  vars["--material-alpha"] = `${Math.round(materialAlpha * 100)}%`;
+  report.push(
+    check(
+      scheme,
+      "bar text on material",
+      Math.min(...barText.map((c) => contrast(c, materialBg(materialAlpha)))),
+    ),
+  );
   for (const [step, color] of Object.entries(accentScale(accent))) {
     vars[`--accent-${step}`] = toCss(color);
   }

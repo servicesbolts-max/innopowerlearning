@@ -25,6 +25,10 @@ export * from "./components/DatePicker/DatePicker";
 
 // Overlays
 export * from "./components/Popover/Popover";
+export * from "./components/Sheet/Sheet";
+export * from "./components/Menu/Menu";
+export * from "./components/Tooltip/Tooltip";
+export * from "./components/Toast/Toast";
 
 // Display
 export * from "./components/Progress/Progress";
@@ -39,3 +43,12 @@ export * from "./components/List/List";
 export * from "./components/DataTable/DataTable";
 export * from "./components/Pagination/Pagination";
 export * from "./components/Disclosure/Disclosure";
+
+// Navigation
+export * from "./components/Tabs/Tabs";
+export * from "./components/Sidebar/Sidebar";
+export * from "./components/NavigationBar/NavigationBar";
+export * from "./components/Breadcrumbs/Breadcrumbs";
+export * from "./components/WizardStepper/WizardStepper";
+export * from "./components/SplitView/SplitView";
+export * from "./components/Toolbar/Toolbar";

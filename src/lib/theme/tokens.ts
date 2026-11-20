@@ -24,6 +24,8 @@ export interface SurfaceTokens {
   controlBorder: Rgba;
   /** Switch and slider thumbs: white in both schemes, as in iOS. */
   thumb: Rgba;
+  /** Dimming layer behind modal sheets and dialogs. */
+  scrim: Rgba;
   fill: Rgba;
 }
 
@@ -40,6 +42,7 @@ export const SURFACES: Record<Scheme, SurfaceTokens> = {
     separator: rgba(60, 60, 67, 0.29),
     controlBorder: rgba(60, 60, 67, 0.58),
     thumb: parseHex("#FFFFFF"),
+    scrim: rgba(0, 0, 0, 0.4),
     fill: rgba(120, 120, 128, 0.2),
   },
   dark: {
@@ -54,6 +57,7 @@ export const SURFACES: Record<Scheme, SurfaceTokens> = {
     separator: rgba(84, 84, 88, 0.6),
     controlBorder: rgba(235, 235, 245, 0.4),
     thumb: parseHex("#FFFFFF"),
+    scrim: rgba(0, 0, 0, 0.6),
     fill: rgba(120, 120, 128, 0.36),
   },
 };
