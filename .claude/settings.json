@@ -55,6 +55,13 @@
       "Bash(* --no-verify *)",
       "Bash(* --no-verify)",
       "Bash(rm -rf *)",
+      "Bash(rm -r *)",
+      "Bash(git send-pack *)",
+      "Bash(git commit -n*)",
+      "Bash(git config core.hooksPath *)",
+      "Bash(git clean *)",
+      "Bash(node --env-file*)",
+      "Bash(dropdb *)",
       "Bash(curl * | sh)",
       "Bash(curl * | bash)",
       "Bash(wget * | sh)",
@@ -64,7 +71,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Read|Edit|Write|NotebookEdit",
+        "matcher": "Read|Grep|Glob|Edit|Write|NotebookEdit",
         "hooks": [
           {
             "type": "command",

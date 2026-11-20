@@ -29,11 +29,13 @@ Current package: **P0**. Built, verified against real Postgres, and reviewed twi
 
 **Open (owner):**
 
-1. Decide on the `.claude/settings.json` changes:
-   - Route Grep and Glob through the `.env` guard. The code exists, but the matcher doesn't send those tools to it.
-   - Add the extra deny rules.
-2. Push to GitHub and confirm CI is green.
-3. Run `/hooks` (it should list 4 hooks) and `/doctor` in the Claude Code CLI.
+1. Push to GitHub and confirm CI is green.
+2. Run `/hooks` (it should list 4 hooks) and `/doctor` in the Claude Code CLI.
+
+Settings changes approved by the owner on 2026-11-20 and applied:
+
+- Grep and Glob now go through the `.env` guard. A live Glob for `.env*` was blocked.
+- Eight deny rules added: `rm -r`, `git send-pack`, `git commit -n`, `core.hooksPath`, `git clean`, `node --env-file`, `dropdb`.
 
 Then: tick P0 in `docs/PLAN.md` and tag `wp-P0-done`.
 
