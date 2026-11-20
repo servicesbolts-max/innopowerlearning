@@ -39,3 +39,6 @@ next-env.d.ts
 # Claude Code personal files
 CLAUDE.local.md
 .claude/settings.local.json
+
+# Storybook
+storybook-static/

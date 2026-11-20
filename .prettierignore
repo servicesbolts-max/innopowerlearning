@@ -6,3 +6,4 @@ playwright-report
 .lighthouseci
 src/db/migrations/meta
 docs/MASTER_PROMPT.md
+storybook-static

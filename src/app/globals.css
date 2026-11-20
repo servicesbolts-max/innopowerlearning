@@ -200,6 +200,20 @@
   }
 }
 
+/* Focus ring for React Aria elements, which expose keyboard focus as [data-focus-visible]. */
+@utility focus-ring {
+  outline: none;
+  &[data-focus-visible] {
+    outline: 2px solid var(--accent-fill);
+    outline-offset: 2px;
+  }
+  @media (forced-colors: active) {
+    &[data-focus-visible] {
+      outline-color: Highlight;
+    }
+  }
+}
+
 /* Hairline separator: 0.5 px on high-density screens, 1 px elsewhere. */
 @utility hairline-b {
   border-bottom: 1px solid var(--separator);

@@ -97,6 +97,7 @@ export default defineConfig([
     "playwright-report/**",
     "test-results/**",
     ".lighthouseci/**",
+    "storybook-static/**",
     "next-env.d.ts",
     "src/db/migrations/meta/**",
   ]),
