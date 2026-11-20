@@ -20,6 +20,10 @@ export interface SurfaceTokens {
   /** Disabled and decorative text only (WCAG 1.4.3 exempts inactive components). */
   labelTertiary: Rgba;
   separator: Rgba;
+  /** Boundary of inputs and toggles: 3:1 on every surface (WCAG 1.4.11). Not in the spec table. */
+  controlBorder: Rgba;
+  /** Switch and slider thumbs: white in both schemes, as in iOS. */
+  thumb: Rgba;
   fill: Rgba;
 }
 
@@ -34,6 +38,8 @@ export const SURFACES: Record<Scheme, SurfaceTokens> = {
     labelSecondary: rgba(60, 60, 67, 0.73),
     labelTertiary: rgba(60, 60, 67, 0.3),
     separator: rgba(60, 60, 67, 0.29),
+    controlBorder: rgba(60, 60, 67, 0.58),
+    thumb: parseHex("#FFFFFF"),
     fill: rgba(120, 120, 128, 0.2),
   },
   dark: {
@@ -46,6 +52,8 @@ export const SURFACES: Record<Scheme, SurfaceTokens> = {
     labelSecondary: rgba(235, 235, 245, 0.6),
     labelTertiary: rgba(235, 235, 245, 0.3),
     separator: rgba(84, 84, 88, 0.6),
+    controlBorder: rgba(235, 235, 245, 0.4),
+    thumb: parseHex("#FFFFFF"),
     fill: rgba(120, 120, 128, 0.36),
   },
 };

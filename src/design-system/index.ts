@@ -1,7 +1,27 @@
 // Public API of the design system (docs/DESIGN_SYSTEM.md). Import from "@/design-system" only.
-export * from "./components/Button/Button";
-export * from "./components/Icon/Icon";
-export * from "./components/Link/Link";
-export * from "./components/Spinner/Spinner";
-export * from "./components/Text/Text";
+export { DsProvider } from "./provider";
 export { cx } from "./utils/cx";
+
+// Foundations and actions
+export * from "./components/Text/Text";
+export * from "./components/Icon/Icon";
+export * from "./components/Spinner/Spinner";
+export * from "./components/Button/Button";
+export * from "./components/Link/Link";
+
+// Inputs
+export * from "./components/Field/Field";
+export * from "./components/TextField/TextField";
+export * from "./components/SearchField/SearchField";
+export * from "./components/Select/Select";
+export * from "./components/Switch/Switch";
+export * from "./components/SegmentedControl/SegmentedControl";
+export * from "./components/Checkbox/Checkbox";
+export * from "./components/Radio/Radio";
+export * from "./components/Slider/Slider";
+export * from "./components/Stepper/Stepper";
+export * from "./components/Calendar/Calendar";
+export * from "./components/DatePicker/DatePicker";
+
+// Overlays
+export * from "./components/Popover/Popover";

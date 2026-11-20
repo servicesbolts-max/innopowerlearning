@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
+import { DsProvider } from "@/design-system";
 import { DEFAULT_LOCALE } from "@/i18n/config";
 import { PRODUCT_NAME } from "@/lib/config";
 import { buildTheme, DEFAULT_THEME, themeToCss } from "@/lib/theme";
@@ -22,7 +23,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <style id="theme" dangerouslySetInnerHTML={{ __html: defaultThemeCss }} />
       </head>
       <body className="antialiased">
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          <DsProvider locale={DEFAULT_LOCALE}>{children}</DsProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

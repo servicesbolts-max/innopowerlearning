@@ -27,7 +27,7 @@ import {
 /** WCAG 2.2 AA for normal text. */
 export const MIN_CONTRAST = 4.5;
 /** Alpha of tinted surfaces (tinted buttons, chips, selected rows). */
-const TINT_ALPHA = 0.15;
+const TINT_ALPHA: Record<Scheme, number> = { light: 0.15, dark: 0.24 };
 /** "auto" keeps white on-accent text unless the fill would need darkening by more than this. */
 const MAX_WHITE_SHIFT = 0.15;
 const WHITE = parseHex("#FFFFFF");
@@ -146,7 +146,7 @@ function accentVars(
   const surfaces = textSurfaces(scheme);
   const { fill, on } = accessibleFill(base, prefer);
   const text = accessibleText(base, surfaces);
-  const tint = rgba(fill.r, fill.g, fill.b, TINT_ALPHA);
+  const tint = rgba(fill.r, fill.g, fill.b, TINT_ALPHA[scheme]);
   const tintSurfaces = surfaces.map((s) => composite(tint, s));
   const textOnTint = accessibleText(text, tintSurfaces);
   const report: ContrastCheck[] = [
@@ -166,8 +166,9 @@ function accentVars(
   };
 }
 
-function check(scheme: Scheme, pair: string, ratio: number): ContrastCheck {
-  return { scheme, pair, ratio: Math.round(ratio * 100) / 100, pass: ratio >= MIN_CONTRAST };
+/** `min` is 4.5 for text and 3 for non-text UI boundaries (WCAG 1.4.11). */
+function check(scheme: Scheme, pair: string, ratio: number, min = MIN_CONTRAST): ContrastCheck {
+  return { scheme, pair, ratio: Math.round(ratio * 100) / 100, pass: ratio >= min };
 }
 
 function schemeVars(theme: TenantTheme, scheme: Scheme): AccentVars {
@@ -182,6 +183,8 @@ function schemeVars(theme: TenantTheme, scheme: Scheme): AccentVars {
     "--label-secondary": toCss(s.labelSecondary),
     "--label-tertiary": toCss(s.labelTertiary),
     "--separator": toCss(s.separator),
+    "--control-border": toCss(s.controlBorder),
+    "--thumb": toCss(s.thumb),
     "--fill": toCss(s.fill),
     "--elevation": SHADOWS[scheme],
   };
@@ -189,6 +192,7 @@ function schemeVars(theme: TenantTheme, scheme: Scheme): AccentVars {
   const report: ContrastCheck[] = [
     check(scheme, "label on surfaces", minContrast(s.label, surfaces)),
     check(scheme, "secondary label on surfaces", minContrast(s.labelSecondary, surfaces)),
+    check(scheme, "control border on surfaces", minContrast(s.controlBorder, surfaces), 3),
   ];
 
   const accent = parseHex(theme.accent);

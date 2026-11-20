@@ -11,7 +11,7 @@
     "undo": "Undo",
     "clearSearch": "Clear search",
     "search": "Search",
-    "removeToken": "Remove {label}",
+    "remove": "Remove",
     "more": "More",
     "moreAvatars": "{count, plural, one {# more person} other {# more people}}",
     "breadcrumbs": "Breadcrumbs",

@@ -1,5 +1,6 @@
 import type { Decorator, Preview } from "@storybook/react-vite";
 import { NextIntlClientProvider } from "next-intl";
+import { DsProvider } from "../src/design-system/provider";
 import messages from "../src/i18n/messages/en.json";
 import {
   buildTheme,
@@ -32,23 +33,25 @@ const withTheme: Decorator = (Story, context) => {
     <NextIntlClientProvider locale="en" timeZone="UTC" messages={messages}>
       <style>{themeToCss(buildTheme(DEMO_THEMES[theme]))}</style>
       <style>{scopedCss}</style>
-      <div className={scheme === "matrix" ? "grid gap-4 md:grid-cols-2" : undefined}>
-        {frames.map(([t, s]) => (
-          <div
-            key={`${t}-${s}`}
-            data-ds-theme={t}
-            data-scheme={s}
-            className="rounded-card bg-bg p-6 font-sans text-label"
-          >
-            {scheme === "matrix" && (
-              <p className="mb-4 text-caption1 text-label-secondary">
-                {t} · {s}
-              </p>
-            )}
-            <Story />
-          </div>
-        ))}
-      </div>
+      <DsProvider locale="en">
+        <div className={scheme === "matrix" ? "grid gap-4 md:grid-cols-2" : undefined}>
+          {frames.map(([t, s]) => (
+            <div
+              key={`${t}-${s}`}
+              data-ds-theme={t}
+              data-scheme={s}
+              className="rounded-card bg-bg p-6 font-sans text-label"
+            >
+              {scheme === "matrix" && (
+                <p className="mb-4 text-caption1 text-label-secondary">
+                  {t} · {s}
+                </p>
+              )}
+              <Story />
+            </div>
+          ))}
+        </div>
+      </DsProvider>
     </NextIntlClientProvider>
   );
 };

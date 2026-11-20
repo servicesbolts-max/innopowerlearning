@@ -7,11 +7,12 @@ import { NextIntlClientProvider } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 import { afterEach, expect } from "vitest";
 import messages from "@/i18n/messages/en.json";
+import { DsProvider } from "../provider";
 
 function Providers({ children }: { children: ReactNode }) {
   return (
     <NextIntlClientProvider locale="en" timeZone="UTC" messages={messages}>
-      {children}
+      <DsProvider locale="en">{children}</DsProvider>
     </NextIntlClientProvider>
   );
 }

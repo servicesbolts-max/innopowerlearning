@@ -20,6 +20,8 @@
   --color-label-secondary: var(--label-secondary);
   --color-label-tertiary: var(--label-tertiary);
   --color-separator: var(--separator);
+  --color-control-border: var(--control-border);
+  --color-thumb: var(--thumb);
   --color-fill: var(--fill);
 
   /* Accent (tenant) */
@@ -85,6 +87,8 @@
 
   /* Shape and depth */
   --radius-control: var(--r-control);
+  /* A control nested 2 px inside another (segment inside its track). */
+  --radius-control-inner: calc(var(--r-control) - 2px);
   --radius-card: var(--r-card);
   --radius-sheet: var(--r-sheet);
   --shadow-elevated: var(--elevation);
@@ -254,11 +258,22 @@
     }
   }
 
+  /*
+   * Reduced motion (Section 7.3): movement becomes a fade, and springs become instant.
+   * Matching on the class text covers every variant prefix (data-entering:, data-exiting:, ...).
+   */
   @media (prefers-reduced-motion: reduce) {
     *,
     ::before,
     ::after {
       scroll-behavior: auto !important;
+    }
+    [data-entering][class*="animate-pop-in"],
+    [data-entering][class*="animate-sheet-up"] {
+      animation-name: fade-in !important;
+    }
+    [data-exiting][class*="animate-sheet-down"] {
+      animation-name: fade-out !important;
     }
   }
 }
