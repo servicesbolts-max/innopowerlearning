@@ -6,10 +6,12 @@ import { isMain, projectDir, readPayload } from "./lib.mjs";
 
 if (isMain(import.meta.url)) {
   const payload = readPayload();
-  const res = spawnSync("pnpm", ["-s", "typecheck"], {
+  // A fixed command string (no args array): Windows needs a shell to run pnpm.cmd, and Node
+  // deprecates passing args together with `shell: true`.
+  const res = spawnSync("pnpm -s typecheck", {
     cwd: projectDir(payload),
     encoding: "utf8",
-    shell: process.platform === "win32",
+    shell: true,
   });
   if (res.status !== 0) {
     const output = `${res.stdout ?? ""}${res.stderr ?? ""}`
