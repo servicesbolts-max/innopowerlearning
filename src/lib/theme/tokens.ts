@@ -91,9 +91,9 @@ export type RadiusScale = keyof typeof RADIUS_SCALES;
 
 export const FONT_STACKS = {
   system:
-    "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', var(--font-inter), Inter, 'Segoe UI', Roboto, system-ui, sans-serif",
+    "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', var(--font-inter, Inter), 'Segoe UI', Roboto, system-ui, sans-serif",
   inter:
-    "var(--font-inter), Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif",
+    "var(--font-inter, Inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif",
 } as const;
 export type FontChoice = keyof typeof FONT_STACKS;
 

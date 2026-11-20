@@ -183,7 +183,7 @@ function schemeVars(theme: TenantTheme, scheme: Scheme): AccentVars {
     "--label-tertiary": toCss(s.labelTertiary),
     "--separator": toCss(s.separator),
     "--fill": toCss(s.fill),
-    "--shadow-elevated": SHADOWS[scheme],
+    "--elevation": SHADOWS[scheme],
   };
   const surfaces = textSurfaces(scheme);
   const report: ContrastCheck[] = [
@@ -225,12 +225,12 @@ export function buildTheme(input: TenantThemeInput = DEFAULT_THEME): BuiltTheme 
   const theme = tenantThemeSchema.parse(input);
   const r = RADIUS_SCALES[theme.radius];
   const base: Record<string, string> = {
-    "--radius-control": `${r.control / 16}rem`,
-    "--radius-card": `${r.card / 16}rem`,
-    "--radius-sheet": `${r.sheet / 16}rem`,
+    "--r-control": `${r.control / 16}rem`,
+    "--r-card": `${r.card / 16}rem`,
+    "--r-sheet": `${r.sheet / 16}rem`,
     "--font-stack": FONT_STACKS[theme.font],
-    "--ease-spring": spring.easing,
-    "--duration-spring": `${spring.durationMs}ms`,
+    "--spring-easing": spring.easing,
+    "--spring-duration": `${spring.durationMs}ms`,
   };
   const light = schemeVars(theme, "light");
   const dark = schemeVars(theme, "dark");
@@ -247,7 +247,7 @@ const VAR_NAME = /^--[a-z0-9-]+$/;
 // Values the engine itself produces: colors, rem lengths, font stacks, shadows, linear() easings.
 const VAR_VALUE = /^[a-zA-Z0-9#.,()%' \-]+$/;
 
-function block(selector: string, vars: Record<string, string>): string {
+function block(selector: string, vars: Record<string, string>, scheme?: Scheme): string {
   const body = Object.entries(vars)
     .map(([name, value]) => {
       if (!VAR_NAME.test(name) || !VAR_VALUE.test(value)) {
@@ -256,7 +256,8 @@ function block(selector: string, vars: Record<string, string>): string {
       return `${name}:${value};`;
     })
     .join("");
-  return `${selector}{${body}}`;
+  // color-scheme is a fixed keyword chosen here, never tenant input.
+  return `${selector}{${scheme ? `color-scheme:${scheme};` : ""}${body}}`;
 }
 
 /**
@@ -268,17 +269,19 @@ export function themeToCss(built: BuiltTheme, root = ":root"): string {
   const { scheme } = built.theme;
   const lightSel = `${root}[data-scheme="light"]`;
   const darkSel = `${root}[data-scheme="dark"]`;
+  const light = (sel: string) => block(sel, built.light, "light");
+  const dark = (sel: string) => block(sel, built.dark, "dark");
   const parts = [block(root, built.base)];
   if (scheme === "dark") {
-    parts.push(block(root, built.dark), block(lightSel, built.light), block(darkSel, built.dark));
+    parts.push(dark(root), light(lightSel), dark(darkSel));
   } else {
-    parts.push(block(root, built.light));
+    parts.push(light(root));
     if (scheme === "system") {
       parts.push(
-        `@media (prefers-color-scheme: dark){${block(`${root}:not([data-scheme="light"])`, built.dark)}}`,
+        `@media (prefers-color-scheme: dark){${dark(`${root}:not([data-scheme="light"])`)}}`,
       );
     }
-    parts.push(block(darkSel, built.dark), block(lightSel, built.light));
+    parts.push(dark(darkSel), light(lightSel));
   }
   return parts.join("\n");
 }

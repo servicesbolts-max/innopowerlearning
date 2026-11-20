@@ -121,7 +121,7 @@ describe("theme engine", () => {
 
   it("applies the radius scale", () => {
     const built = buildTheme({ accent: "#0071E3", radius: "rounded" });
-    expect(built.base["--radius-sheet"]).toBe("1.75rem");
+    expect(built.base["--r-sheet"]).toBe("1.75rem");
   });
 });
 
@@ -141,6 +141,7 @@ describe("themeToCss", () => {
       .replace(/@media \(prefers-color-scheme: dark\)\{/g, "")
       .replace(/:root(\[data-scheme="(light|dark)"\]|:not\(\[data-scheme="light"\]\))?\{/g, "")
       .replace(/--[a-z0-9-]+:[^;{}]+;/g, "")
+      .replace(/color-scheme:(light|dark);/g, "")
       .replace(/[}\n]/g, "");
     expect(stripped).toBe("");
     expect(css).toContain('@media (prefers-color-scheme: dark){:root:not([data-scheme="light"]){');
