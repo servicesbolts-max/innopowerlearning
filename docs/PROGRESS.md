@@ -29,8 +29,14 @@ Current package: **P0**. Built, verified against real Postgres, and reviewed twi
 
 **Open (owner):**
 
-1. Push to GitHub and confirm CI is green.
+1. Push the gitleaks fix (`git push`) and confirm CI run #2 is fully green.
+   - First CI run (#1, `f347921`), on GitHub `servicesbolts-max/innopowerlearning`:
+     - Lint/typecheck/unit, Integration (Postgres) and Build + Playwright + axe + Lighthouse passed.
+     - The gitleaks _action_ failed with exit 1, but the same gitleaks binary found no leaks in all 9 commits locally.
+     - CI now runs the binary directly from a pinned image.
 2. Run `/hooks` (it should list 4 hooks) and `/doctor` in the Claude Code CLI.
+
+Pushing stays with the owner: the auto-mode safety check refused to loosen the push guard, so Claude does not push.
 
 Settings changes approved by the owner on 2026-11-20 and applied:
 
