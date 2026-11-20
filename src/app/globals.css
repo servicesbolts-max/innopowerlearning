@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Scan the same sources from Next and from Storybook (whose Vite root differs). */
+@source "../";
+@source "../../.storybook";
+
 /*
  * Design tokens (docs/MASTER_PROMPT.md Section 7, docs/DESIGN_SYSTEM.md).
  *
