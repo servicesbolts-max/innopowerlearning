@@ -52,7 +52,7 @@ export function SegmentedControl({
           className={cx(
             "min-h-8 flex-1 cursor-pointer rounded-control-inner px-3 text-subheadline font-medium text-label focus-ring transition-colors duration-200",
             "data-disabled:opacity-40 data-hovered:bg-fill data-pressed:opacity-70",
-            "data-selected:bg-bg-tertiary data-selected:font-semibold data-selected:shadow-elevated data-selected:data-hovered:bg-bg-tertiary",
+            "data-selected:bg-segment-selected data-selected:font-semibold data-selected:shadow-elevated data-selected:data-hovered:bg-segment-selected",
             "forced-colors:data-selected:outline forced-colors:data-selected:outline-[Highlight]",
           )}
         >

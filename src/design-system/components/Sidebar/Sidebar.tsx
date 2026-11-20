@@ -98,7 +98,13 @@ export function Sidebar({
                     <Icon icon={item.icon} size={20} />
                     {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
                     {!collapsed && item.badge && (
-                      <span className="text-footnote font-semibold text-label-secondary">
+                      // On the selected (tinted) row the count inherits the on-tint text color.
+                      <span
+                        className={cx(
+                          "text-footnote font-semibold",
+                          !active && "text-label-secondary",
+                        )}
+                      >
                         {item.badge}
                       </span>
                     )}

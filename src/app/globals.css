@@ -27,6 +27,7 @@
   --color-control-border: var(--control-border);
   --color-thumb: var(--thumb);
   --color-scrim: var(--scrim);
+  --color-segment-selected: var(--segment-selected);
   --color-fill: var(--fill);
 
   /* Accent (tenant) */

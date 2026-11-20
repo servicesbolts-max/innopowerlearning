@@ -196,6 +196,7 @@ function schemeVars(theme: TenantTheme, scheme: Scheme): AccentVars {
     "--control-border": toCss(s.controlBorder),
     "--thumb": toCss(s.thumb),
     "--scrim": toCss(s.scrim),
+    "--segment-selected": toCss(s.segmentSelected),
     "--fill": toCss(s.fill),
     "--elevation": SHADOWS[scheme],
   };

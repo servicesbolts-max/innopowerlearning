@@ -24,7 +24,9 @@ import {
   inputGroup,
   type FieldChromeProps,
 } from "../Field/Field";
+import { useIsClient } from "../../utils/use-is-client";
 import { Icon } from "../Icon/Icon";
+import { Skeleton } from "../Skeleton/Skeleton";
 import { Popover } from "../Popover/Popover";
 
 const segment =
@@ -35,6 +37,19 @@ function Segments() {
     <DateInput className="flex flex-1 items-center px-1">
       {(seg) => <DateSegment segment={seg} className={segment} />}
     </DateInput>
+  );
+}
+
+/**
+ * React Aria reads the clock for placeholders and "today", so date and time fields render after
+ * hydration. Until then a same-size placeholder keeps the layout stable.
+ */
+function PendingField({ label }: { label?: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5" aria-hidden>
+      {label && <span className="text-subheadline font-medium text-label">{label}</span>}
+      <Skeleton className="min-h-touch w-full" />
+    </div>
   );
 }
 
@@ -49,6 +64,7 @@ export function DatePicker<T extends DateValue>({
   ...props
 }: DatePickerProps<T>) {
   const t = useTranslations("ds");
+  if (!useIsClient()) return <PendingField label={label} />;
   return (
     <AriaDatePicker {...props} className={withClass(className, "group flex flex-col gap-1.5")}>
       {label && <FieldLabel>{label}</FieldLabel>}
@@ -82,6 +98,7 @@ export function TimeField<T extends TimeValue>({
   className,
   ...props
 }: TimeFieldProps<T>) {
+  if (!useIsClient()) return <PendingField label={label} />;
   return (
     <AriaTimeField {...props} className={withClass(className, "flex flex-col gap-1.5")}>
       {label && <FieldLabel>{label}</FieldLabel>}

@@ -15,7 +15,9 @@ import {
   type DateValue,
 } from "react-aria-components";
 import { cx, withClass } from "../../utils/cx";
+import { useIsClient } from "../../utils/use-is-client";
 import { Icon } from "../Icon/Icon";
+import { Skeleton } from "../Skeleton/Skeleton";
 
 export type CalendarProps<T extends DateValue> = AriaCalendarProps<T>;
 
@@ -25,6 +27,8 @@ const navButton =
 /** Month calendar. Arrow keys move by day, Page Up/Down by month. Today is ringed, not only tinted. */
 export function Calendar<T extends DateValue>({ className, ...props }: CalendarProps<T>) {
   const t = useTranslations("ds");
+  // React Aria marks "today" from the clock, so the calendar renders after hydration.
+  if (!useIsClient()) return <Skeleton className="h-80 w-72" />;
   return (
     <AriaCalendar {...props} className={withClass(className, "w-fit text-label")}>
       <div className="mb-2 flex items-center justify-between gap-2">

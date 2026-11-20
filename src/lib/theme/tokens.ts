@@ -26,6 +26,8 @@ export interface SurfaceTokens {
   thumb: Rgba;
   /** Dimming layer behind modal sheets and dialogs. */
   scrim: Rgba;
+  /** Raised selected segment in a segmented control (iOS: white in light, #636366 in dark). */
+  segmentSelected: Rgba;
   fill: Rgba;
 }
 
@@ -43,6 +45,7 @@ export const SURFACES: Record<Scheme, SurfaceTokens> = {
     controlBorder: rgba(60, 60, 67, 0.58),
     thumb: parseHex("#FFFFFF"),
     scrim: rgba(0, 0, 0, 0.4),
+    segmentSelected: parseHex("#FFFFFF"),
     fill: rgba(120, 120, 128, 0.2),
   },
   dark: {
@@ -58,6 +61,7 @@ export const SURFACES: Record<Scheme, SurfaceTokens> = {
     controlBorder: rgba(235, 235, 245, 0.4),
     thumb: parseHex("#FFFFFF"),
     scrim: rgba(0, 0, 0, 0.6),
+    segmentSelected: parseHex("#636366"),
     fill: rgba(120, 120, 128, 0.36),
   },
 };
