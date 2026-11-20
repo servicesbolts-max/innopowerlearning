@@ -1,9 +1,8 @@
-import postgres from "postgres";
-import { describeError, ownerUrl, scriptEnv } from "./load-env";
+import { describeError, ownerConnection, scriptEnv } from "./load-env";
 import { runMigrations, setRuntimeLoginPassword } from "../src/db/migrate";
 
 const e = scriptEnv("db:migrate");
-const sql = postgres(ownerUrl(e, "db:migrate"), { max: 1, onnotice: () => {} });
+const sql = ownerConnection(e, "db:migrate");
 
 try {
   const { applied, skipped } = await runMigrations(sql);

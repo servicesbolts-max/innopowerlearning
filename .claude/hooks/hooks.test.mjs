@@ -52,6 +52,28 @@ describe("pre-bash-guard", () => {
     'psql -c "truncate table users"',
     "dropdb innopower",
     'docker compose exec postgres psql -c "drop owned by app_user"',
+    // Bypasses found in the P0 security re-review:
+    'git commit --allow-empty -m "$(git push origin main)"',
+    'git commit -m "$(rm -rf src)"',
+    'git commit -m "`cat .env`"',
+    "git commit -F .env",
+    "git commit --no-veri -m x",
+    "git -c user.name=x commit -n -m y",
+    'git -C "a b" commit -n -m y',
+    "$env:HUSKY = 0",
+    '$env:HUSKY="0"',
+    "x=push; git $x origin",
+    "git send-pack origin main",
+    "cat <.env",
+    "cat .env*",
+    "node --env-file=.env -p process.env",
+    "grep -r KEY .",
+    "rm -r src",
+    "rm src -Recurse",
+    "del src -Recurse",
+    "cmd /c rmdir /s /q src",
+    "find src -delete",
+    "[IO.Directory]::Delete('src', $true)",
   ];
   const allowed = [
     "git status",
@@ -73,6 +95,14 @@ describe("pre-bash-guard", () => {
     'git commit -m "docs: never commit .env, drop table example"',
     "cat .env.example",
     'git commit -m "fix: x" && git log --oneline -n 3',
+    "git commit -m 'fix: single quotes do not expand $(this)'",
+    "git commit -F /tmp/commit-msg.txt",
+    "git commit -q -F C:/scratch/commit-msg.txt",
+    "rm -r .next",
+    'pid=$(netstat -ano | grep LISTENING | grep ":3100" | head -1)',
+    "grep -rn --exclude='.env*' DATABASE_URL src",
+    "rg DATABASE_URL src",
+    'docker compose exec -T postgres psql -U innopower -tAc "select 1"',
   ];
 
   it.each(blocked)("blocks: %s", (cmd) => expect(checkCommand(cmd)).not.toBeNull());
@@ -152,6 +182,24 @@ describe("pre-edit-guard reads", () => {
 });
 
 describe("guards fail closed", () => {
+  it("pre-edit-guard blocks when its own logic throws (non-string path)", () => {
+    const res = spawnSync(
+      process.execPath,
+      [path.join(import.meta.dirname, "pre-edit-guard.mjs")],
+      {
+        input: JSON.stringify({
+          tool_name: "Edit",
+          tool_input: { file_path: { evil: 1 } },
+          cwd: root,
+        }),
+        encoding: "utf8",
+        env: { ...process.env, CLAUDE_PROJECT_DIR: root },
+      },
+    );
+    expect(res.status).toBe(2);
+    expect(res.stderr).toMatch(/failing closed/);
+  });
+
   for (const hook of ["pre-bash-guard.mjs", "pre-edit-guard.mjs"]) {
     it(`${hook} blocks an unreadable payload`, () => {
       const res = spawnSync(process.execPath, [path.join(import.meta.dirname, hook)], {

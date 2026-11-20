@@ -1,5 +1,4 @@
-import postgres from "postgres";
-import { describeError, ownerUrl, scriptEnv } from "./load-env";
+import { describeError, ownerConnection, scriptEnv } from "./load-env";
 import { assertSeedAllowed } from "../src/db/seed-guard";
 
 const e = scriptEnv("db:seed");
@@ -11,7 +10,7 @@ try {
   process.exit(1);
 }
 
-const sql = postgres(ownerUrl(e, "db:seed"), { max: 1, onnotice: () => {} });
+const sql = ownerConnection(e, "db:seed");
 try {
   // P0 stub: verify the schema is migrated. P2 adds the idempotent five-tenant seed (Section 11).
   const [{ count }] = await sql<

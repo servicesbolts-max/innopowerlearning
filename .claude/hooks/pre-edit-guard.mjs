@@ -56,14 +56,19 @@ export function checkRead(input, root, toolName = "Read") {
 }
 
 if (isMain(import.meta.url)) {
-  const payload = readPayload();
-  if (payload === null || typeof payload.tool_input !== "object" || payload.tool_input === null) {
-    block("unreadable hook payload (failing closed).");
+  try {
+    const payload = readPayload();
+    if (payload === null || typeof payload.tool_input !== "object" || payload.tool_input === null) {
+      block("unreadable hook payload (failing closed).");
+    }
+    const input = payload.tool_input;
+    const root = projectDir(payload);
+    const reason = ["Read", "Grep", "Glob"].includes(payload.tool_name)
+      ? checkRead(input, root, payload.tool_name)
+      : checkEdit(input.file_path ?? input.notebook_path, root);
+    if (reason) block(reason);
+  } catch (error) {
+    // Any unexpected input (e.g. a non-string path) blocks instead of letting the edit through.
+    block(`guard error, failing closed: ${error?.message ?? error}`);
   }
-  const input = payload.tool_input;
-  const root = projectDir(payload);
-  const reason = ["Read", "Grep", "Glob"].includes(payload.tool_name)
-    ? checkRead(input, root, payload.tool_name)
-    : checkEdit(input.file_path ?? input.notebook_path, root);
-  if (reason) block(reason);
 }

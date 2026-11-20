@@ -1,5 +1,4 @@
-import postgres from "postgres";
-import { describeError, ownerUrl, scriptEnv } from "./load-env";
+import { describeError, ownerConnection, ownerUrl, scriptEnv } from "./load-env";
 import { assertLocalDatabase } from "../src/db/seed-guard";
 
 const e = scriptEnv("db:reset");
@@ -11,7 +10,7 @@ try {
   process.exit(1);
 }
 
-const sql = postgres(ownerUrl(e, "db:reset"), { max: 1, onnotice: () => {} });
+const sql = ownerConnection(e, "db:reset");
 try {
   // Local development only (guarded above): recreate the public schema.
   await sql.unsafe(`drop schema if exists public cascade; create schema public;`);

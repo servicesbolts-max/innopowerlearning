@@ -1,6 +1,7 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { env } from "@/lib/env";
+import { sslFor } from "./tls";
 
 /**
  * Low-level connection. From P2, application code never uses this directly: all tenant data
@@ -10,9 +11,9 @@ let sql: postgres.Sql | undefined;
 
 export function getSql(): postgres.Sql {
   const e = env();
+  const ssl = sslFor(e.DATABASE_URL, e.APP_ENV);
   sql ??= postgres(e.DATABASE_URL, {
-    // TLS is mandatory outside development; the URL's sslmode still applies elsewhere.
-    ...(e.APP_ENV === "production" || e.APP_ENV === "staging" ? { ssl: "require" as const } : {}),
+    ...(ssl ? { ssl } : {}),
     max: 10,
     idle_timeout: 20,
     connect_timeout: 5,

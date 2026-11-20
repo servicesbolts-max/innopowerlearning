@@ -1,4 +1,6 @@
+import postgres from "postgres";
 import { EnvValidationError, parseEnv, type ServerEnv } from "../src/lib/env";
+import { sslFor } from "../src/db/tls";
 
 /** Loads .env into process.env for CLI scripts (Next.js loads it itself for the app). */
 export function loadEnv(): void {
@@ -30,6 +32,13 @@ export function ownerUrl(e: ServerEnv, script: string): string {
     process.exit(1);
   }
   return e.DATABASE_OWNER_URL;
+}
+
+/** One owner connection for a CLI script, with TLS whenever the host is not loopback. */
+export function ownerConnection(e: ServerEnv, script: string): postgres.Sql {
+  const url = ownerUrl(e, script);
+  const ssl = sslFor(url, e.APP_ENV);
+  return postgres(url, { max: 1, onnotice: () => {}, ...(ssl ? { ssl } : {}) });
 }
 
 /** Turns driver and validation errors into one actionable line (never prints secrets). */

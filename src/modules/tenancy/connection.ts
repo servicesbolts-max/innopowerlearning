@@ -1,4 +1,4 @@
-import { getSql } from "@/db";
+import { getSql } from "@/db/client";
 
 /**
  * Connectivity check for readiness probes. Runs as app_login with no role switch and touches no

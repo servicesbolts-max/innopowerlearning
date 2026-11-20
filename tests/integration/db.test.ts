@@ -20,6 +20,8 @@ let runtime: postgres.Sql;
 
 const TENANT_A = "0190a1b2-0000-7000-8000-00000000000a";
 const TENANT_B = "0190a1b2-0000-7000-8000-00000000000b";
+const PARENT_A = "0190a1b2-0000-7000-8000-0000000000a1";
+const PARENT_B = "0190a1b2-0000-7000-8000-0000000000b1";
 
 beforeAll(async () => {
   await runMigrations(owner);
@@ -27,21 +29,38 @@ beforeAll(async () => {
   runtime = postgres(runtimeUrl, { max: 1, onnotice: () => {} });
 
   // A throwaway table built exactly like .claude/rules/db.md tells P2 to build tenant tables.
+  // Parent and child use composite foreign keys (tenant_id, id), as P2 tables must.
   await owner.unsafe(`
     drop table if exists _isolation_probe;
-    create table _isolation_probe (tenant_id uuid not null, label text not null);
+    drop table if exists _isolation_parent;
+    create table _isolation_parent (
+      tenant_id uuid not null, id uuid not null, unique (tenant_id, id)
+    );
+    create table _isolation_probe (
+      tenant_id uuid not null,
+      label text not null,
+      parent_id uuid,
+      foreign key (tenant_id, parent_id) references _isolation_parent (tenant_id, id)
+    );
+    alter table _isolation_parent enable row level security;
+    alter table _isolation_parent force row level security;
     alter table _isolation_probe enable row level security;
     alter table _isolation_probe force row level security;
+    create policy _isolation_parent_tenant on _isolation_parent
+      using (tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)
+      with check (tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid);
     create policy _isolation_probe_tenant on _isolation_probe
       using (tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)
       with check (tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid);
-    grant select, insert, update, delete on _isolation_probe to app_user;
-    insert into _isolation_probe values ('${TENANT_A}', 'a'), ('${TENANT_B}', 'b');
+    grant select, insert, update, delete on _isolation_parent, _isolation_probe to app_user;
+    insert into _isolation_parent values ('${TENANT_A}', '${PARENT_A}'), ('${TENANT_B}', '${PARENT_B}');
+    insert into _isolation_probe values ('${TENANT_A}', 'a', null), ('${TENANT_B}', 'b', null);
   `);
 });
 
 afterAll(async () => {
   await owner`drop table if exists _isolation_probe`;
+  await owner`drop table if exists _isolation_parent`;
   await runtime?.end({ timeout: 5 });
   await owner.end({ timeout: 5 });
 });
@@ -129,6 +148,24 @@ describe("RLS policy template from .claude/rules/db.md", () => {
     await expect(
       asTenant(TENANT_A, (tx) => tx`update _isolation_probe set tenant_id = ${TENANT_B}`),
     ).rejects.toThrow(/row-level security/);
+  });
+
+  it("lets a row reference its own tenant's parent", async () => {
+    const rows = await asTenant(
+      TENANT_A,
+      (tx) =>
+        tx`insert into _isolation_probe values (${TENANT_A}, 'own-parent', ${PARENT_A}) returning label`,
+    );
+    expect(rows.map((r) => r.label)).toEqual(["own-parent"]);
+  });
+
+  it("rejects a row that references another tenant's parent (composite foreign key)", async () => {
+    await expect(
+      asTenant(
+        TENANT_A,
+        (tx) => tx`insert into _isolation_probe values (${TENANT_A}, 'x', ${PARENT_B})`,
+      ),
+    ).rejects.toThrow(/foreign key/);
   });
 
   it("cannot update or delete another tenant's rows", async () => {

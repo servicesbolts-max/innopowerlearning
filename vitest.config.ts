@@ -21,6 +21,7 @@ export default defineConfig({
           include: [
             "src/**/*.test.{ts,tsx}",
             "scripts/**/*.test.ts",
+            "tests/*.test.ts",
             ".claude/hooks/**/*.test.mjs",
           ],
           environment: "node",

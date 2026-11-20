@@ -11,6 +11,20 @@ import prettier from "eslint-config-prettier/flat";
  * - UI (src/app, src/design-system) never imports src/db.
  * - Cross-module imports go through the module's public index.ts only.
  */
+const DEEP_MODULE = {
+  group: ["@/modules/*/*", "**/modules/*/*"],
+  message: "Import a module through its public index.ts (e.g. '@/modules/tenancy').",
+};
+const RAW_CONNECTION = {
+  group: ["@/db/client", "**/db/client", "postgres", "drizzle-orm/postgres-js"],
+  message: "Only src/modules/tenancy (withTenant) and src/db open database connections.",
+};
+const UI_NO_DB = {
+  group: ["@/db", "@/db/*", "**/db", "**/db/*"],
+  message: "UI code never queries the database. Call a module's public API instead.",
+};
+const restrict = (...patterns) => ["error", { patterns }];
+
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -63,68 +77,17 @@ export default defineConfig([
           ],
         },
       ],
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: ["@/modules/*/*", "**/modules/*/*"],
-              message: "Import a module through its public index.ts (e.g. '@/modules/tenancy').",
-            },
-          ],
-        },
-      ],
+      "no-restricted-imports": restrict(DEEP_MODULE, RAW_CONNECTION),
     },
   },
   {
     files: ["src/app/**/*.{ts,tsx}", "src/design-system/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: ["@/db", "@/db/*", "**/db/*"],
-              message: "UI code never queries the database. Call a module's public API instead.",
-            },
-            {
-              group: ["@/modules/*/*", "**/modules/*/*"],
-              message: "Import a module through its public index.ts (e.g. '@/modules/tenancy').",
-            },
-          ],
-        },
-      ],
-    },
+    rules: { "no-restricted-imports": restrict(UI_NO_DB, DEEP_MODULE, RAW_CONNECTION) },
   },
   {
-    // Only the tenancy module (withTenant) may touch the raw connection. Everything else
-    // imports withTenant from "@/modules/tenancy" and table definitions from "@/db/schema".
-    files: ["src/modules/**/*.{ts,tsx}"],
-    ignores: ["src/modules/tenancy/**"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: [
-            {
-              name: "@/db",
-              importNames: ["getSql", "getDb", "closeDb"],
-              message: "Use withTenant from '@/modules/tenancy'; only tenancy opens connections.",
-            },
-          ],
-          patterns: [
-            {
-              group: ["@/db/client", "**/db/client"],
-              message: "Use withTenant from '@/modules/tenancy'; only tenancy opens connections.",
-            },
-            {
-              group: ["@/modules/*/*", "**/modules/*/*"],
-              message: "Import a module through its public index.ts (e.g. '@/modules/tenancy').",
-            },
-          ],
-        },
-      ],
-    },
+    // The only places allowed to open connections. Everything else uses withTenant.
+    files: ["src/db/**/*.{ts,tsx}", "src/modules/tenancy/**/*.{ts,tsx}"],
+    rules: { "no-restricted-imports": restrict(DEEP_MODULE) },
   },
   globalIgnores([
     ".next/**",
