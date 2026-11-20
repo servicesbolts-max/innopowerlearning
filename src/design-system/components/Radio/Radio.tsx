@@ -54,7 +54,7 @@ export function Radio({ children, className, ...props }: RadioProps) {
         aria-hidden
         className="flex size-5.5 shrink-0 items-center justify-center rounded-full border-2 border-control-border bg-bg transition-colors duration-150 group-data-focus-visible:outline-2 group-data-focus-visible:outline-offset-2 group-data-focus-visible:outline-accent-fill group-data-invalid:border-red-fill group-data-selected:border-transparent group-data-selected:bg-accent-fill"
       >
-        <span className="size-2 scale-0 rounded-full bg-on-accent transition-transform duration-150 group-data-selected:scale-100 motion-reduce:transition-none" />
+        <span className="size-2 scale-0 rounded-full bg-on-accent transition-transform duration-150 group-data-selected:scale-100 motion-reduce:transition-none forced-colors:bg-[CanvasText]" />
       </span>
       {children}
     </AriaRadio>

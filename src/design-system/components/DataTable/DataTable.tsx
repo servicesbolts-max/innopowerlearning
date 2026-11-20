@@ -82,7 +82,10 @@ export function DataTable<T extends { id: Key }>({
   const [hidden, setHidden] = useState<string[]>([]);
   const [selected, setSelected] = useState<Selection>(new Set());
 
-  const visibleColumns = columns.filter((c) => !hidden.includes(c.id));
+  const visibleColumns = useMemo(
+    () => columns.filter((c) => !hidden.includes(c.id)),
+    [columns, hidden],
+  );
   const hideable = columns.filter((c) => c.hideable !== false && !c.isRowHeader);
 
   const shownRows = useMemo(() => {
@@ -99,28 +102,35 @@ export function DataTable<T extends { id: Key }>({
   const selectedKeys: Set<Key> =
     selected === "all" ? new Set(shownRows.map((r) => r.id)) : (selected as Set<Key>);
   const clear = () => setSelected(new Set());
-  const rowHeight = dense ? "min-h-touch-dense text-subheadline" : "min-h-touch text-body";
+  // Table cells ignore min-height, so the row height is set with height on the cells.
+  const rowHeight = dense ? "h-touch-dense text-subheadline" : "h-touch text-body";
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Always mounted, so screen readers announce every selection change. */}
+      <span className="sr-only" aria-live="polite">
+        {selectable && selectedKeys.size > 0
+          ? t("selectedCount", { count: selectedKeys.size })
+          : ""}
+      </span>
       {(filterable || hideable.length > 0 || (selectable && bulkActions)) && (
-        <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label={t("toolbar")}>
-          {selectable && selectedKeys.size > 0 && bulkActions ? (
-            <div className="flex flex-1 flex-wrap items-center gap-2">
-              <span className="text-subheadline font-semibold" aria-live="polite">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* The filter stays visible while rows are selected, so an active filter is never hidden. */}
+          {filterable && (
+            <SearchField
+              aria-label={t("filter")}
+              value={query}
+              onChange={setQuery}
+              className="min-w-48 flex-1 sm:max-w-xs"
+            />
+          )}
+          {selectable && selectedKeys.size > 0 && bulkActions && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span aria-hidden className="text-subheadline font-semibold">
                 {t("selectedCount", { count: selectedKeys.size })}
               </span>
               {bulkActions(selectedKeys, clear)}
             </div>
-          ) : (
-            filterable && (
-              <SearchField
-                aria-label={t("filter")}
-                value={query}
-                onChange={setQuery}
-                className="min-w-48 flex-1 sm:max-w-xs"
-              />
-            )
           )}
           {hideable.length > 0 && (
             <DialogTrigger>

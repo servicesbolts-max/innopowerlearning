@@ -16,7 +16,7 @@ import { Icon } from "../Icon/Icon";
 export type StepperProps = NumberFieldProps & FieldChromeProps;
 
 const stepButton =
-  "focus-ring flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-control text-accent-text data-hovered:bg-fill data-pressed:opacity-70 data-disabled:cursor-default data-disabled:opacity-40";
+  "touch-target focus-ring flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-control text-accent-text data-hovered:bg-fill data-pressed:opacity-70 data-disabled:cursor-default data-disabled:opacity-40";
 
 /** Number stepper (spin button): type a value or use the buttons and arrow keys. */
 export function Stepper({ label, description, errorMessage, className, ...props }: StepperProps) {

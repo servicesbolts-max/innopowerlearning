@@ -41,8 +41,15 @@ export function Slider<T extends number | number[]>({
           <>
             <div className="absolute top-1/2 h-1 w-full -translate-y-1/2 rounded-full bg-control-border" />
             <div
-              className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-accent-fill"
-              style={{ width: `${state.getThumbPercent(0) * 100}%` }}
+              className="absolute start-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-accent-fill forced-colors:bg-[Highlight]"
+              style={
+                state.values.length > 1
+                  ? {
+                      insetInlineStart: `${state.getThumbPercent(0) * 100}%`,
+                      width: `${(state.getThumbPercent(1) - state.getThumbPercent(0)) * 100}%`,
+                    }
+                  : { width: `${state.getThumbPercent(0) * 100}%` }
+              }
             />
             {state.values.map((_, i) => (
               <SliderThumb

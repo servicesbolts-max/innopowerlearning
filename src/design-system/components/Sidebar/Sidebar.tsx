@@ -88,7 +88,7 @@ export function Sidebar({
                     aria-current={active ? "page" : undefined}
                     aria-label={collapsed ? item.label : undefined}
                     className={cx(
-                      "flex min-h-10 items-center gap-3 rounded-control px-3 text-body focus-ring",
+                      "flex min-h-touch items-center gap-3 rounded-control px-3 text-body focus-ring",
                       collapsed && "justify-center px-0",
                       active
                         ? "bg-accent-tint font-semibold text-accent-text-on-tint"

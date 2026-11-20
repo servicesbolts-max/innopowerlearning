@@ -64,7 +64,7 @@ export function SearchField({
                   <Button
                     slot="remove"
                     aria-label={t("remove")}
-                    className="flex size-6 cursor-pointer items-center justify-center rounded-full data-hovered:bg-fill"
+                    className="touch-target flex size-6 cursor-pointer items-center justify-center rounded-full data-hovered:bg-fill"
                   >
                     <Icon icon={X} size={16} />
                   </Button>
@@ -84,7 +84,7 @@ export function SearchField({
         />
         <Button
           aria-label={t("clearSearch")}
-          className="flex size-8 cursor-pointer items-center justify-center rounded-full text-label-secondary group-data-empty:invisible data-hovered:bg-fill"
+          className="touch-target flex size-8 cursor-pointer items-center justify-center rounded-full text-label-secondary group-data-empty:invisible data-hovered:bg-fill"
         >
           <Icon icon={X} size={16} />
         </Button>

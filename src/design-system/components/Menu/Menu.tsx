@@ -1,7 +1,8 @@
 "use client";
 
 import { Check, type LucideIcon } from "lucide-react";
-import { useRef, useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
+import { useId, useRef, useState, type ReactNode } from "react";
 import {
   Header,
   Keyboard,
@@ -57,7 +58,7 @@ export function MenuItem({
       className={withClass(
         className,
         cx(
-          "group flex min-h-touch cursor-pointer items-center gap-3 rounded-control px-3 text-body outline-none data-disabled:opacity-40 data-focused:bg-fill",
+          "group flex min-h-touch cursor-pointer items-center gap-3 rounded-control px-3 text-body outline-none data-disabled:opacity-40 data-focus-visible:outline-2 data-focus-visible:-outline-offset-2 data-focus-visible:outline-accent-fill data-focused:forced-selected data-focused:bg-fill",
           destructive ? "text-red-text" : "text-label",
         ),
       )}
@@ -104,8 +105,11 @@ export function MenuSeparator() {
 export interface ContextMenuProps {
   /** The element that gets the menu. It must be focusable so keyboard users can open the menu. */
   children: ReactNode;
-  /** Accessible name of the target, announced with its keyboard hint. */
-  "aria-label": string;
+  /**
+   * Accessible name, only when the visible content is not a good name. It must contain the
+   * visible text (WCAG 2.5.3); by default the name comes from the content.
+   */
+  "aria-label"?: string;
   menu: ReactNode;
   className?: string;
 }
@@ -120,12 +124,18 @@ export function ContextMenu({ children, menu, className, ...props }: ContextMenu
   const anchor = useRef<HTMLSpanElement>(null);
   const area = useRef<HTMLDivElement>(null);
 
+  const t = useTranslations("ds");
+  const hintId = useId();
+  const openKeys = ["Enter", " ", "ContextMenu"];
   return (
     <div
       ref={area}
+      role="button"
       tabIndex={0}
       aria-label={props["aria-label"]}
       aria-haspopup="menu"
+      aria-expanded={open}
+      aria-describedby={hintId}
       className={cx("relative focus-visible:outline-2 focus-visible:outline-offset-2", className)}
       onContextMenu={(e) => {
         e.preventDefault();
@@ -134,13 +144,19 @@ export function ContextMenu({ children, menu, className, ...props }: ContextMenu
         setOpen(true);
       }}
       onKeyDown={(e) => {
-        if ((e.shiftKey && e.key === "F10") || e.key === "ContextMenu") {
+        // Keys pressed inside the (portaled) menu bubble here through React; ignore them.
+        if (e.target !== e.currentTarget) return;
+        if (openKeys.includes(e.key) || (e.shiftKey && e.key === "F10")) {
           e.preventDefault();
           setPoint(null);
           setOpen(true);
         }
       }}
     >
+      {/* hidden: excluded from the name, still read as the description via aria-describedby. */}
+      <span id={hintId} hidden>
+        {t("contextMenuHint")}
+      </span>
       {children}
       <span
         ref={anchor}

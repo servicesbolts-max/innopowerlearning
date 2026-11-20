@@ -37,7 +37,9 @@ export function NavigationBar({ title, back, actions, accessory, className }: Na
   }, []);
 
   return (
-    <>
+    // A header landmark keeps the bar, the h1 and the accessory inside a landmark (axe "region").
+    // display: contents keeps the page (not this header) as the sticky bar's scroll container.
+    <header className="contents">
       <div
         className={cx(
           "sticky top-0 z-30 transition-[background-color,border-color] duration-200",
@@ -75,6 +77,6 @@ export function NavigationBar({ title, back, actions, accessory, className }: Na
         </h1>
         {accessory && <div className="mt-3">{accessory}</div>}
       </div>
-    </>
+    </header>
   );
 }

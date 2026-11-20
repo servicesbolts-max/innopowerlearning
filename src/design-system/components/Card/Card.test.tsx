@@ -110,6 +110,22 @@ describe("display components", () => {
     await expectNoAxeViolations();
   });
 
+  it("ListRow marks the selected item with aria-current", () => {
+    renderDs(
+      <ListSection>
+        <ListRow title="Ada Okafor" onPress={() => {}} isSelected />
+        <ListRow title="Kwame Mensah" onPress={() => {}} />
+      </ListSection>,
+    );
+    expect(screen.getByRole("button", { name: "Ada Okafor" })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Kwame Mensah" })).not.toHaveAttribute(
+      "aria-current",
+    );
+  });
+
   it("Disclosure expands with the keyboard", async () => {
     renderDs(
       <DisclosureGroup>

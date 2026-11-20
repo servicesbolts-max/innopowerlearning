@@ -19,7 +19,7 @@ export interface ButtonProps extends AriaButtonProps {
 }
 
 const BASE =
-  "focus-ring relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap border border-transparent font-semibold transition-[opacity,background-color] duration-200 data-disabled:opacity-40 data-pressed:opacity-70 data-pending:cursor-wait";
+  "focus-ring relative inline-flex select-none items-center justify-center gap-2 border border-transparent font-semibold transition-[opacity,background-color] duration-200 data-disabled:opacity-40 data-pressed:opacity-70 data-pending:cursor-wait";
 
 const SIZES: Record<ButtonSize, string> = {
   // 32 px: dense admin controls only (Section 7.3).
@@ -75,7 +75,8 @@ export function Button({
           SIZES[size],
           colors(variant, destructive),
           pill ? "rounded-full" : "rounded-control",
-          fullWidth && "w-full",
+          // Full-width buttons (dialogs, sheets) wrap at 200% zoom; inline ones keep one line.
+          fullWidth ? "w-full py-2 text-center whitespace-normal" : "whitespace-nowrap",
         ),
       )}
     >

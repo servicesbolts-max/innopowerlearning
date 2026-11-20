@@ -53,7 +53,7 @@ export function Chip({ children, className, ...props }: ChipProps) {
       className={withClass(
         className,
         cx(
-          "inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-full border border-control-border bg-bg px-3 text-subheadline font-medium text-label focus-ring",
+          "touch-target inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-full border border-control-border bg-bg px-3 text-subheadline font-medium text-label focus-ring",
           "data-disabled:opacity-40 data-hovered:bg-fill data-pressed:opacity-70",
           "data-selected:border-transparent data-selected:bg-accent-tint data-selected:text-accent-text-on-tint",
         ),

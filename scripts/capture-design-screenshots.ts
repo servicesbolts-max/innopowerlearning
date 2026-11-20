@@ -43,9 +43,81 @@ async function main() {
         }
       }
     }
+    await captureStates(browser);
   } finally {
     await browser.close();
   }
+}
+
+type Browser = Awaited<ReturnType<typeof chromium.launch>>;
+
+/** States a static capture cannot show: collapsed bar, open sheet, forced colors, 200% zoom. */
+async function captureStates(browser: Browser) {
+  const shot = async (
+    name: string,
+    options: Parameters<Browser["newPage"]>[0],
+    act: (page: Awaited<ReturnType<Browser["newPage"]>>) => Promise<void>,
+  ) => {
+    const page = await browser.newPage({
+      reducedMotion: "reduce",
+      deviceScaleFactor: 1,
+      ...options,
+    });
+    await act(page);
+    const file = path.join(outDir, `state-${name}.png`);
+    await page.screenshot({ path: file });
+    console.log(file);
+    await page.close();
+  };
+  const open = async (page: Awaited<ReturnType<Browser["newPage"]>>, theme: string) => {
+    await page.goto(`${baseURL}/design/${theme}`, { waitUntil: "networkidle" });
+    await page.getByRole("group", { name: "Start date" }).waitFor();
+  };
+
+  await shot(
+    "innopower-390-light-collapsed-bar",
+    { viewport: { width: 390, height: 844 }, colorScheme: "light" },
+    async (page) => {
+      await open(page, "innopower");
+      await page.mouse.wheel(0, 1600);
+      await page.waitForTimeout(500);
+    },
+  );
+  await shot(
+    "sunset-390-dark-sheet-open",
+    { viewport: { width: 390, height: 844 }, colorScheme: "dark" },
+    async (page) => {
+      await open(page, "sunset");
+      await page.getByRole("button", { name: "Open sheet" }).click();
+      await page.getByRole("dialog").waitFor();
+      await page.waitForTimeout(300);
+    },
+  );
+  await shot(
+    "emerald-1280-light-alert-dialog",
+    { viewport: { width: 1280, height: 900 }, colorScheme: "light" },
+    async (page) => {
+      await open(page, "emerald");
+      await page.getByRole("button", { name: "Delete course" }).nth(1).click();
+      await page.getByRole("alertdialog").waitFor();
+      await page.waitForTimeout(300);
+    },
+  );
+  await shot(
+    "innopower-1280-forced-colors",
+    { viewport: { width: 1280, height: 900 }, forcedColors: "active" },
+    async (page) => {
+      await open(page, "innopower");
+      await page.getByText("Selection controls").scrollIntoViewIfNeeded();
+    },
+  );
+  await shot(
+    "sunset-640-light-zoom-200",
+    { viewport: { width: 640, height: 1000 }, colorScheme: "light" },
+    async (page) => {
+      await open(page, "sunset");
+    },
+  );
 }
 
 main().catch((error: unknown) => {

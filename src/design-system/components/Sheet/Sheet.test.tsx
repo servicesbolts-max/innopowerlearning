@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Copy, Trash2 } from "lucide-react";
 import { DialogTrigger } from "react-aria-components";
@@ -8,7 +8,7 @@ import { expectNoAxeViolations, renderDs } from "../../testing";
 import { Button } from "../Button/Button";
 import { ContextMenu, Menu, MenuItem, MenuSeparator, MenuTrigger } from "../Menu/Menu";
 import { TextField } from "../TextField/TextField";
-import { Banner, ToastRegion, toast } from "../Toast/Toast";
+import { Banner, ToastProvider, ToastRegion, useToast } from "../Toast/Toast";
 import { Tooltip, TooltipTrigger } from "../Tooltip/Tooltip";
 import { ActionSheet, AlertDialog, Sheet } from "./Sheet";
 
@@ -101,11 +101,37 @@ describe("overlays", () => {
     expect(menu).not.toBeInTheDocument();
   });
 
+  it("ContextMenu target is a named button that opens with Enter and passes axe", async () => {
+    const onAction = vi.fn();
+    renderDs(
+      <ContextMenu
+        menu={
+          <MenuItem id="rename" onAction={onAction}>
+            Rename
+          </MenuItem>
+        }
+      >
+        Lesson 3
+      </ContextMenu>,
+    );
+    const target = screen.getByRole("button", { name: "Lesson 3" });
+    expect(target).toHaveAccessibleDescription(/Shift\+F10/);
+    expect(target).toHaveAttribute("aria-haspopup", "menu");
+    await expectNoAxeViolations();
+    await userEvent.tab();
+    await userEvent.keyboard("{Enter}");
+    expect(await screen.findByRole("menu")).toBeInTheDocument();
+    expect(target).toHaveAttribute("aria-expanded", "true");
+    // Enter on an item runs it and closes the menu; it must not bubble back and reopen it.
+    await userEvent.keyboard("{Enter}");
+    expect(onAction).toHaveBeenCalled();
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
   it("ContextMenu opens with Shift+F10", async () => {
     const onAction = vi.fn();
     renderDs(
       <ContextMenu
-        aria-label="Lesson 3"
         menu={
           <MenuItem id="rename" onAction={onAction}>
             Rename
@@ -136,18 +162,29 @@ describe("overlays", () => {
 
   it("Toast shows with an undo action; Banner uses the right role", async () => {
     const onUndo = vi.fn();
+    function Archive() {
+      const toast = useToast();
+      return (
+        <Button
+          onPress={() =>
+            toast.add({ title: "Lesson archived", action: { label: "Undo", onAction: onUndo } })
+          }
+        >
+          Archive
+        </Button>
+      );
+    }
     renderDs(
-      <div>
+      <ToastProvider>
+        <Archive />
         <ToastRegion />
         <Banner tone="danger" title="Payment failed">
           Check your card details and try again.
         </Banner>
         <Banner tone="success" title="Saved" />
-      </div>,
+      </ToastProvider>,
     );
-    act(() => {
-      toast.add({ title: "Lesson archived", action: { label: "Undo", onAction: onUndo } });
-    });
+    await userEvent.click(screen.getByRole("button", { name: "Archive" }));
     const region = await screen.findByRole("region", { name: "Notifications" });
     expect(within(region).getByText("Lesson archived")).toBeInTheDocument();
     expect(screen.getByText("Payment failed").closest("[role]")).toHaveAttribute("role", "alert");
@@ -155,5 +192,33 @@ describe("overlays", () => {
     await expectNoAxeViolations();
     await userEvent.click(within(region).getByRole("button", { name: "Undo" }));
     expect(onUndo).toHaveBeenCalled();
+  });
+
+  it("useToast outside a provider fails loudly", () => {
+    function Orphan() {
+      useToast();
+      return null;
+    }
+    expect(() => renderDs(<Orphan />)).toThrow(/ToastProvider/);
+  });
+
+  it("each provider has its own queue (no cross-tree leaks)", async () => {
+    function Add({ title }: { title: string }) {
+      const toast = useToast();
+      return <Button onPress={() => toast.add({ title })}>Add {title}</Button>;
+    }
+    renderDs(
+      <div>
+        <ToastProvider>
+          <Add title="Tenant A" />
+          <ToastRegion />
+        </ToastProvider>
+        <ToastProvider>
+          <Add title="Tenant B" />
+        </ToastProvider>
+      </div>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Add Tenant B" }));
+    expect(screen.queryByText("Tenant B")).not.toBeInTheDocument();
   });
 });

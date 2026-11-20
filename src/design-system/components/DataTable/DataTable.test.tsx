@@ -62,6 +62,7 @@ describe("DataTable", () => {
         columns={columns}
         rows={rows}
         selectable
+        filterable
         bulkActions={(keys, clear) => (
           <Button size="small" onPress={clear}>
             Message {keys.size}
@@ -71,7 +72,10 @@ describe("DataTable", () => {
     );
     const firstRow = screen.getAllByRole("row")[1]!;
     await userEvent.click(within(firstRow).getByRole("checkbox"));
-    expect(screen.getByText("1 selected")).toBeInTheDocument();
+    // Announced by the always-mounted live region, and shown in the bulk-action bar.
+    expect(screen.getByText("1 selected", { selector: "[aria-live]" })).toBeInTheDocument();
+    expect(screen.getByText("1 selected", { selector: "[aria-hidden]" })).toBeVisible();
+    expect(screen.getByRole("searchbox", { name: "Filter" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("checkbox", { name: "Select all" }));
     expect(screen.getByRole("button", { name: "Message 3" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Message 3" }));

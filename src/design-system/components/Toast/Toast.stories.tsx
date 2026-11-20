@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "../Button/Button";
-import { Banner, ToastRegion, toast } from "./Toast";
+import { Banner, ToastProvider, ToastRegion, useToast } from "./Toast";
 
 const meta = {
   title: "Overlays/Toast and banner",
@@ -10,25 +10,32 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+function ArchiveButton() {
+  const toast = useToast();
+  return (
+    <Button
+      onPress={() =>
+        toast.add(
+          {
+            title: "Lesson archived",
+            description: "It is hidden from learners.",
+            action: { label: "Undo", onAction: () => {} },
+          },
+          { timeout: 6000 },
+        )
+      }
+    >
+      Archive lesson
+    </Button>
+  );
+}
+
 export const UndoToast: Story = {
   render: () => (
-    <>
+    <ToastProvider>
+      <ArchiveButton />
       <ToastRegion />
-      <Button
-        onPress={() =>
-          toast.add(
-            {
-              title: "Lesson archived",
-              description: "It is hidden from learners.",
-              action: { label: "Undo", onAction: () => {} },
-            },
-            { timeout: 6000 },
-          )
-        }
-      >
-        Archive lesson
-      </Button>
-    </>
+    </ToastProvider>
   ),
 };
 

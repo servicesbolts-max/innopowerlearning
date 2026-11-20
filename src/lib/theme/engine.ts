@@ -49,8 +49,16 @@ export type TenantTheme = z.output<typeof tenantThemeSchema>;
 
 export const DEFAULT_THEME: TenantTheme = tenantThemeSchema.parse({ accent: DEFAULT_ACCENT });
 
+export type ContrastKind =
+  "label" | "labelSecondary" | "controlBorder" | "barText" | "onFill" | "text" | "textOnTint";
+
 export interface ContrastCheck {
   scheme: Scheme;
+  /** Stable id for translation: what is measured. */
+  kind: ContrastKind;
+  /** Color family for fill/text/tint checks: accent, accent2 or a status name. */
+  subject?: string;
+  /** English description, for logs and tests. UI should translate `kind` and `subject`. */
   pair: string;
   ratio: number;
   pass: boolean;
@@ -160,9 +168,15 @@ function accentVars(
   const tintSurfaces = surfaces.map((s) => composite(tint, s));
   const textOnTint = accessibleText(text, tintSurfaces);
   const report: ContrastCheck[] = [
-    check(scheme, `on-${label} on ${label} fill`, contrast(on, fill)),
-    check(scheme, `${label} text on surfaces`, minContrast(text, surfaces)),
-    check(scheme, `${label} text on ${label} tint`, minContrast(textOnTint, tintSurfaces)),
+    check(scheme, "onFill", prefix, `on-${label} on ${label} fill`, contrast(on, fill)),
+    check(scheme, "text", prefix, `${label} text on surfaces`, minContrast(text, surfaces)),
+    check(
+      scheme,
+      "textOnTint",
+      prefix,
+      `${label} text on ${label} tint`,
+      minContrast(textOnTint, tintSurfaces),
+    ),
   ];
   return {
     vars: {
@@ -177,8 +191,15 @@ function accentVars(
 }
 
 /** `min` is 4.5 for text and 3 for non-text UI boundaries (WCAG 1.4.11). */
-function check(scheme: Scheme, pair: string, ratio: number, min = MIN_CONTRAST): ContrastCheck {
-  return { scheme, pair, ratio: Math.round(ratio * 100) / 100, pass: ratio >= min };
+function check(
+  scheme: Scheme,
+  kind: ContrastKind,
+  subject: string | undefined,
+  pair: string,
+  ratio: number,
+  min = MIN_CONTRAST,
+): ContrastCheck {
+  return { scheme, kind, subject, pair, ratio: Math.round(ratio * 100) / 100, pass: ratio >= min };
 }
 
 function schemeVars(theme: TenantTheme, scheme: Scheme): AccentVars {
@@ -202,9 +223,22 @@ function schemeVars(theme: TenantTheme, scheme: Scheme): AccentVars {
   };
   const surfaces = textSurfaces(scheme);
   const report: ContrastCheck[] = [
-    check(scheme, "label on surfaces", minContrast(s.label, surfaces)),
-    check(scheme, "secondary label on surfaces", minContrast(s.labelSecondary, surfaces)),
-    check(scheme, "control border on surfaces", minContrast(s.controlBorder, surfaces), 3),
+    check(scheme, "label", undefined, "label on surfaces", minContrast(s.label, surfaces)),
+    check(
+      scheme,
+      "labelSecondary",
+      undefined,
+      "secondary label on surfaces",
+      minContrast(s.labelSecondary, surfaces),
+    ),
+    check(
+      scheme,
+      "controlBorder",
+      undefined,
+      "control border on surfaces",
+      minContrast(s.controlBorder, surfaces),
+      3,
+    ),
   ];
 
   const accent = parseHex(theme.accent);
@@ -228,6 +262,8 @@ function schemeVars(theme: TenantTheme, scheme: Scheme): AccentVars {
   report.push(
     check(
       scheme,
+      "barText",
+      undefined,
       "bar text on material",
       Math.min(...barText.map((c) => contrast(c, materialBg(materialAlpha)))),
     ),
@@ -280,6 +316,29 @@ export function buildTheme(input: TenantThemeInput = DEFAULT_THEME): BuiltTheme 
   };
 }
 
+/**
+ * Build a theme from stored tenant data without ever failing the page: invalid input (legacy
+ * rows, manual edits, a stricter schema) falls back to the platform default. Validate strictly
+ * when saving (server action); use this when reading. `onInvalid` lets the caller log the tenant.
+ */
+export function safeBuildTheme(
+  input: unknown,
+  onInvalid?: (error: z.ZodError) => void,
+): BuiltTheme {
+  const parsed = tenantThemeSchema.safeParse(input);
+  if (!parsed.success) {
+    onInvalid?.(parsed.error);
+    return buildTheme(DEFAULT_THEME);
+  }
+  return buildTheme(parsed.data);
+}
+
+/**
+ * Selectors themeToCss may scope to: `:root`, or one data attribute with an optional slug or
+ * UUID value. Never build this from free text; P2 should pass `[data-tenant="<uuid>"]`.
+ */
+const ROOT_SELECTOR = /^(?::root|\[data-[a-z][a-z-]*(?:="[a-z0-9-]+")?\])$/;
+
 const VAR_NAME = /^--[a-z0-9-]+$/;
 // Values the engine itself produces: colors, rem lengths, font stacks, shadows, linear() easings.
 const VAR_VALUE = /^[a-zA-Z0-9#.,()%' \-]+$/;
@@ -303,6 +362,9 @@ function block(selector: string, vars: Record<string, string>, scheme?: Scheme):
  * default applies, and "system" follows `prefers-color-scheme`.
  */
 export function themeToCss(built: BuiltTheme, root = ":root"): string {
+  if (!ROOT_SELECTOR.test(root)) {
+    throw new Error("Refusing to emit theme CSS for an unsafe root selector");
+  }
   const { scheme } = built.theme;
   const lightSel = `${root}[data-scheme="light"]`;
   const darkSel = `${root}[data-scheme="dark"]`;

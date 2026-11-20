@@ -79,7 +79,7 @@ export function SelectItem({
       textValue={textValue}
       className={withClass(
         className,
-        "group flex min-h-touch cursor-pointer items-center gap-2 rounded-control px-2.5 text-body text-label outline-none data-disabled:opacity-40 data-focused:bg-fill",
+        "group flex min-h-touch cursor-pointer items-center gap-2 rounded-control px-2.5 text-body text-label outline-none data-disabled:opacity-40 data-focus-visible:outline-2 data-focus-visible:-outline-offset-2 data-focus-visible:outline-accent-fill data-focused:forced-selected data-focused:bg-fill",
       )}
     >
       <span className="w-5 shrink-0 text-accent-text">

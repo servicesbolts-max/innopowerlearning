@@ -225,6 +225,32 @@
   }
 }
 
+/*
+ * Extends the pointer target of a small control to at least 44 x 44 px (Section 7.3) without
+ * changing how it looks: an invisible, centered ::before takes the extra hits.
+ */
+@utility touch-target {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, var(--spacing-touch));
+    height: max(100%, var(--spacing-touch));
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Forced colors: selected or focused items that rely on an accent fill use system colors. */
+@utility forced-selected {
+  @media (forced-colors: active) {
+    background-color: Highlight;
+    color: HighlightText;
+    forced-color-adjust: none;
+  }
+}
+
 /* Hairline separator: 0.5 px on high-density screens, 1 px elsewhere. */
 @utility hairline-b {
   border-bottom: 1px solid var(--separator);

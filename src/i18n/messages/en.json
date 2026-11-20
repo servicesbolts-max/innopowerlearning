@@ -9,11 +9,9 @@
     "close": "Close",
     "cancel": "Cancel",
     "dismiss": "Dismiss",
-    "undo": "Undo",
     "clearSearch": "Clear search",
     "search": "Search",
     "remove": "Remove",
-    "more": "More",
     "moreAvatars": "{count, plural, one {# more person} other {# more people}}",
     "breadcrumbs": "Breadcrumbs",
     "pagination": "Pagination",
@@ -21,14 +19,11 @@
     "nextPage": "Next page",
     "pageNumber": "Page {page}",
     "progress": "Progress",
-    "percent": "{value, number, percent}",
     "stepOf": "Step {current} of {total}",
     "stepComplete": "Completed",
-    "stepCurrent": "Current step",
     "toggleSidebar": "Toggle sidebar",
     "back": "Back",
     "selectAll": "Select all",
-    "selectRow": "Select row",
     "columns": "Columns",
     "filter": "Filter",
     "noResults": "No results",
@@ -40,8 +35,8 @@
     "openCalendar": "Open calendar",
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
-    "required": "Required",
-    "toolbar": "Toolbar"
+    "toolbar": "Toolbar",
+    "contextMenuHint": "Press Enter, Shift+F10 or the Menu key for actions."
   },
   "design": {
     "metaTitle": "Design system",
@@ -146,7 +141,8 @@
       "uploading": "Uploading video",
       "module": "Module progress",
       "emptyTitle": "No courses yet",
-      "emptyBody": "Create your first course. You can save it as a draft and publish it later."
+      "emptyBody": "Create your first course. You can save it as a draft and publish it later.",
+      "duration": "{hours, plural, one {# hour} other {# hours}}"
     },
     "lists": {
       "preferences": "Preferences",
@@ -190,7 +186,7 @@
       "actions": "Actions",
       "edit": "Edit",
       "archive": "Archive",
-      "contextTarget": "Lesson 3: Pricing. Right click, or press Shift+F10.",
+      "contextTarget": "Right click the lesson above, or focus it and press Enter or Shift+F10.",
       "details": "Details",
       "detailsBody": "12 lessons, about 4 hours. Certificate on completion.",
       "copyLink": "Copy link",
@@ -246,7 +242,26 @@
       "ratio": "Ratio",
       "result": "Result",
       "pass": "Pass",
-      "fail": "Fail"
+      "fail": "Fail",
+      "kinds": {
+        "label": "Label on surfaces",
+        "labelSecondary": "Secondary label on surfaces",
+        "controlBorder": "Control border on surfaces",
+        "barText": "Bar text on material",
+        "onFill": "Text on {subject} fill",
+        "text": "{subject} text on surfaces",
+        "textOnTint": "{subject} text on {subject} tint"
+      },
+      "subjects": {
+        "accent": "accent",
+        "accent2": "secondary accent",
+        "green": "green",
+        "red": "red",
+        "orange": "orange",
+        "yellow": "yellow",
+        "indigo": "indigo",
+        "purple": "purple"
+      }
     }
   }
 }

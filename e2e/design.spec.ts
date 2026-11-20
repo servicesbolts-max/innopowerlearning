@@ -84,3 +84,38 @@ test("scheme override switches to dark without reloading", async ({ page }) => {
   const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   expect(bg).toBe("rgb(0, 0, 0)");
 });
+
+test("scheme override and its control stay in sync across theme navigation", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/design/innopower");
+  await page.getByRole("radio", { name: "Dark" }).click();
+  await page.getByRole("link", { name: "Emerald" }).click();
+  await expect(page).toHaveURL(/\/design\/emerald$/);
+  const forced = await page.locator("html").getAttribute("data-scheme");
+  const darkChecked = await page.getByRole("radio", { name: "Dark" }).isChecked();
+  // Either the override survives and the control shows it, or both reset to System.
+  expect(forced === "dark").toBe(darkChecked);
+});
+
+// 1280 px at 200% zoom lays out like a 640 px viewport (WCAG 1.4.10 reflow).
+test("showcase reflows at 200% zoom without horizontal scrolling", async ({ page }) => {
+  await page.setViewportSize({ width: 640, height: 900 });
+  await page.goto("/design/sunset");
+  await expect(page.getByRole("group", { name: "Start date" })).toBeVisible();
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+});
+
+test("navigation bar stays pinned and shows the inline title after scrolling", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/design/innopower");
+  const inlineTitle = page.locator("header p[aria-hidden]");
+  await expect(inlineTitle).toHaveCSS("opacity", "0");
+  await page.mouse.wheel(0, 1600);
+  await expect(inlineTitle).toHaveCSS("opacity", "1");
+  const top = await inlineTitle.evaluate((el) => el.getBoundingClientRect().top);
+  expect(top).toBeGreaterThanOrEqual(0);
+  expect(top).toBeLessThan(44);
+});

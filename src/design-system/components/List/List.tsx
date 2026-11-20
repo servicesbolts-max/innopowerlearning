@@ -51,6 +51,8 @@ export interface ListRowProps {
   href?: string;
   /** Makes the whole row a button with a disclosure chevron. */
   onPress?: () => void;
+  /** The item open in a detail pane: tinted, bold and aria-current. */
+  isSelected?: boolean;
 }
 
 const TILE: Record<NonNullable<ListRowProps["iconTone"]>, string> = {
@@ -71,6 +73,7 @@ export function ListRow({
   trailing,
   href,
   onPress,
+  isSelected,
 }: ListRowProps) {
   const interactive = Boolean(href || onPress);
   const content = (
@@ -87,9 +90,19 @@ export function ListRow({
       )}
       <span className="flex min-h-touch min-w-0 flex-1 items-center gap-3 hairline-b py-2.5 pe-4 group-last/row:border-b-0">
         <span className="flex min-w-0 flex-1 flex-col text-start">
-          <span className="truncate text-body text-label">{title}</span>
+          {/* Text wraps rather than truncates, so 200% zoom and large text keep every word. */}
+          <span className={cx("text-body break-words text-label", isSelected && "font-semibold")}>
+            {title}
+          </span>
           {subtitle && (
-            <span className="truncate text-subheadline text-label-secondary">{subtitle}</span>
+            <span
+              className={cx(
+                "text-subheadline break-words",
+                isSelected ? "text-label" : "text-label-secondary",
+              )}
+            >
+              {subtitle}
+            </span>
           )}
         </span>
         {/* Negative margin: a 44 px control (Switch) fits the row without making it taller. */}
@@ -112,15 +125,18 @@ export function ListRow({
     "flex w-full items-center gap-3 ps-4 text-start",
     interactive &&
       "focus-ring cursor-pointer -outline-offset-2 data-hovered:bg-fill data-pressed:bg-fill",
+    isSelected && "bg-accent-tint forced-selected data-hovered:bg-accent-tint",
   );
+  // aria-current marks the open item in list-and-detail layouts (SplitView).
+  const current = isSelected ? ("true" as const) : undefined;
   return (
     <li className="group/row">
       {href ? (
-        <AriaLink href={href} className={rowClass}>
+        <AriaLink href={href} aria-current={current} className={rowClass}>
           {content}
         </AriaLink>
       ) : onPress ? (
-        <Button onPress={onPress} className={rowClass}>
+        <Button onPress={onPress} aria-current={current} className={rowClass}>
           {content}
         </Button>
       ) : (

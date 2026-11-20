@@ -2,7 +2,7 @@
 
 import { CircleAlert, CircleCheck, Info, TriangleAlert, X, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import {
   Button as AriaButton,
   Text,
@@ -28,8 +28,52 @@ export interface ToastContentValue {
   action?: { label: string; onAction: () => void };
 }
 
-/** App-wide toast queue. Call `toast.add({...}, { timeout: 5000 })` from anywhere on the client. */
-export const toast = new ToastQueue<ToastContentValue>({ maxVisibleToasts: 3 });
+type Queue = ToastQueue<ToastContentValue>;
+
+const ToastContext = createContext<Queue | null>(null);
+
+/**
+ * Owns one toast queue per React tree. A module-level queue would be shared by every request on
+ * the server and survive tenant switches in the browser, leaking titles and undo handlers across
+ * tenants. Mount it inside the tenant-scoped shell, keyed by tenant id, with one `ToastRegion`.
+ */
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [queue] = useState<Queue>(() => new ToastQueue<ToastContentValue>({ maxVisibleToasts: 3 }));
+  return <ToastContext value={queue}>{children}</ToastContext>;
+}
+
+function useQueue(): Queue {
+  const queue = useContext(ToastContext);
+  if (!queue) throw new Error("useToast must be used inside <ToastProvider>.");
+  return queue;
+}
+
+export interface ToastApi {
+  /**
+   * Show a toast. `timeout` (at least 5 s) applies only to informational toasts: a toast with an
+   * action (Undo) stays until dismissed, so keyboard and screen-reader users can reach it with F6
+   * (WCAG 2.2.1).
+   */
+  add: (content: ToastContentValue, options?: { timeout?: number }) => string;
+  close: (key: string) => void;
+}
+
+const MIN_TIMEOUT = 5000;
+
+/** The current tree's toasts, for event handlers: `useToast().add({ title }, { timeout: 5000 })`. */
+export function useToast(): ToastApi {
+  const queue = useQueue();
+  return {
+    add: (content, options) =>
+      queue.add(
+        content,
+        content.action || !options?.timeout
+          ? {}
+          : { timeout: Math.max(MIN_TIMEOUT, options.timeout) },
+      ),
+    close: (key) => queue.close(key),
+  };
+}
 
 const TOAST_ICON: Record<ToastTone, LucideIcon> = {
   neutral: Info,
@@ -37,8 +81,9 @@ const TOAST_ICON: Record<ToastTone, LucideIcon> = {
   danger: CircleAlert,
 };
 
-/** Place once near the root. It is an F6-reachable landmark and announces new toasts politely. */
-export function ToastRegion({ queue = toast }: { queue?: ToastQueue<ToastContentValue> }) {
+/** Place once inside ToastProvider. It is an F6-reachable landmark and announces toasts politely. */
+export function ToastRegion() {
+  const queue = useQueue();
   const t = useTranslations("ds");
   return (
     <AriaToastRegion
@@ -81,7 +126,7 @@ export function ToastRegion({ queue = toast }: { queue?: ToastQueue<ToastContent
                   item.content.action!.onAction();
                   queue.close(item.key);
                 }}
-                className="min-h-8 shrink-0 cursor-pointer rounded-control px-2 text-subheadline font-semibold text-accent-text focus-ring data-hovered:bg-fill"
+                className="touch-target min-h-8 shrink-0 cursor-pointer rounded-control px-2 text-subheadline font-semibold text-accent-text focus-ring data-hovered:bg-fill"
               >
                 {item.content.action.label}
               </AriaButton>
@@ -89,7 +134,7 @@ export function ToastRegion({ queue = toast }: { queue?: ToastQueue<ToastContent
             <AriaButton
               slot="close"
               aria-label={t("dismiss")}
-              className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-label-secondary focus-ring data-hovered:bg-fill"
+              className="touch-target flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-label-secondary focus-ring data-hovered:bg-fill"
             >
               <Icon icon={X} size={16} />
             </AriaButton>
@@ -159,7 +204,7 @@ export function Banner({
         <AriaButton
           onPress={onDismiss}
           aria-label={t("dismiss")}
-          className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full focus-ring data-hovered:bg-fill"
+          className="touch-target flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full focus-ring data-hovered:bg-fill"
         >
           <Icon icon={X} size={16} />
         </AriaButton>

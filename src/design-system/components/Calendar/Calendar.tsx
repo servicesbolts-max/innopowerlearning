@@ -55,10 +55,10 @@ export function Calendar<T extends DateValue>({ className, ...props }: CalendarP
             <CalendarCell
               date={date}
               className={cx(
-                "flex size-10 cursor-pointer items-center justify-center rounded-full text-body tabular-nums focus-ring",
+                "flex size-11 cursor-pointer items-center justify-center rounded-full text-body tabular-nums focus-ring",
                 "data-disabled:text-label-tertiary data-hovered:bg-fill data-outside-month:hidden data-unavailable:text-label-tertiary data-unavailable:line-through",
                 "data-today:font-semibold data-today:text-accent-text data-today:ring-1 data-today:ring-accent-text",
-                "data-selected:bg-accent-fill data-selected:font-semibold data-selected:text-on-accent data-selected:data-hovered:bg-accent-fill",
+                "data-selected:forced-selected data-selected:bg-accent-fill data-selected:font-semibold data-selected:text-on-accent data-selected:data-hovered:bg-accent-fill",
               )}
             />
           )}

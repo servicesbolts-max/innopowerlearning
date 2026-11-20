@@ -2,13 +2,13 @@
 
 import { ChevronLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Button as AriaButton } from "react-aria-components";
 import { cx } from "../../utils/cx";
 import { Icon } from "../Icon/Icon";
 
 export interface SplitViewProps {
-  /** The list (inbox, submissions, learners). */
+  /** The list (inbox, submissions, learners). Mark the open row with `ListRow isSelected`. */
   list: ReactNode;
   /** The selected item's detail, or an empty state. */
   detail: ReactNode;
@@ -20,7 +20,13 @@ export interface SplitViewProps {
   className?: string;
 }
 
-/** List and detail side by side from 768 px; one at a time, with Back, on phones. */
+const PHONE = "(max-width: 767px)";
+
+/**
+ * List and detail side by side from 768 px; one at a time, with Back, on phones. On phones the
+ * pane that was focused disappears, so focus moves to the detail pane on open and back to the
+ * list's selected row on Back.
+ */
 export function SplitView({
   list,
   detail,
@@ -31,6 +37,22 @@ export function SplitView({
   className,
 }: SplitViewProps) {
   const t = useTranslations("ds");
+  const listPane = useRef<HTMLElement>(null);
+  const detailPane = useRef<HTMLElement>(null);
+  const previous = useRef(showDetail);
+
+  useEffect(() => {
+    if (previous.current === showDetail) return;
+    previous.current = showDetail;
+    if (!window.matchMedia(PHONE).matches) return;
+    if (showDetail) {
+      detailPane.current?.focus();
+    } else {
+      const selected = listPane.current?.querySelector<HTMLElement>('[aria-current="true"]');
+      (selected ?? listPane.current)?.focus();
+    }
+  }, [showDetail]);
+
   return (
     <div
       className={cx(
@@ -39,17 +61,24 @@ export function SplitView({
       )}
     >
       <section
+        ref={listPane}
+        tabIndex={-1}
         aria-label={listLabel}
         className={cx(
-          "w-full shrink-0 overflow-y-auto border-e border-separator md:block md:w-80",
+          "w-full shrink-0 overflow-y-auto border-e border-separator outline-none md:block md:w-80",
           showDetail && "max-md:hidden",
         )}
       >
         {list}
       </section>
       <section
+        ref={detailPane}
+        tabIndex={-1}
         aria-label={detailLabel}
-        className={cx("min-w-0 flex-1 overflow-y-auto", !showDetail && "max-md:hidden")}
+        className={cx(
+          "min-w-0 flex-1 overflow-y-auto outline-none",
+          !showDetail && "max-md:hidden",
+        )}
       >
         <AriaButton
           onPress={onBack}

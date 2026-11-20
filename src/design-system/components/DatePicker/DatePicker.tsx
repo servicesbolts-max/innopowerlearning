@@ -30,7 +30,7 @@ import { Skeleton } from "../Skeleton/Skeleton";
 import { Popover } from "../Popover/Popover";
 
 const segment =
-  "rounded-sm px-0.5 tabular-nums text-label outline-none data-placeholder:text-label-secondary data-focused:bg-accent-fill data-focused:text-on-accent data-[type=literal]:px-0";
+  "rounded-sm px-0.5 tabular-nums text-label outline-none data-placeholder:text-label-secondary data-focused:bg-accent-fill data-focused:text-on-accent data-focused:forced-selected data-[type=literal]:px-0";
 
 function Segments() {
   return (
@@ -72,7 +72,7 @@ export function DatePicker<T extends DateValue>({
         <Segments />
         <Button
           aria-label={t("openCalendar")}
-          className="flex size-9 cursor-pointer items-center justify-center rounded-control text-accent-text focus-ring data-hovered:bg-fill data-pressed:opacity-70"
+          className="touch-target flex size-9 cursor-pointer items-center justify-center rounded-control text-accent-text focus-ring data-hovered:bg-fill data-pressed:opacity-70"
         >
           <Icon icon={CalendarDays} size={20} />
         </Button>

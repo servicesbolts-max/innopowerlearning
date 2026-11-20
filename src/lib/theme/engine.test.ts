@@ -1,11 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { contrast, hueDistance, parseHex, rgbToOklch, toHex, type Rgba } from "./color";
 import { DEMO_THEMES, DEMO_THEME_NAMES } from "./demo-themes";
 import {
   accessibleFill,
   accessibleText,
   buildTheme,
+  DEFAULT_THEME,
   MIN_CONTRAST,
+  safeBuildTheme,
   tenantThemeSchema,
   themeToCss,
 } from "./engine";
@@ -155,5 +157,32 @@ describe("themeToCss", () => {
 
   it("scopes to a custom root selector", () => {
     expect(themeToCss(buildTheme(), "[data-tenant]")).toMatch(/^\[data-tenant\]\{/);
+    expect(themeToCss(buildTheme(), '[data-tenant="9f1c-2a"]')).toMatch(
+      /^\[data-tenant="9f1c-2a"\]\{/,
+    );
+  });
+
+  it.each([
+    '[data-tenant="x"]{}body{display:none}[x="',
+    '[data-tenant="a b"]',
+    "</style><script>alert(1)</script>",
+    "body",
+    ":root;color:red",
+    '[data-tenant="UPPER"]',
+  ])("rejects an unsafe root selector: %s", (root) => {
+    expect(() => themeToCss(buildTheme(), root)).toThrow(/unsafe root selector/);
+  });
+});
+
+describe("safeBuildTheme", () => {
+  it("falls back to the default theme and reports invalid stored input", () => {
+    const onInvalid = vi.fn();
+    const built = safeBuildTheme({ accent: "red", radius: "huge" }, onInvalid);
+    expect(built.theme).toEqual(DEFAULT_THEME);
+    expect(onInvalid).toHaveBeenCalledOnce();
+  });
+
+  it("uses valid input as is", () => {
+    expect(safeBuildTheme({ accent: "#0F9D7A" }).theme.accent).toBe("#0F9D7A");
   });
 });

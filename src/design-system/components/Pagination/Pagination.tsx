@@ -48,7 +48,7 @@ export function Pagination({ page, pageCount, onPageChange, className }: Paginat
         </li>
         {pageWindow(page, pageCount).map((p, i) =>
           p === null ? (
-            <li key={`gap-${i}`} aria-hidden className="px-1 text-label-secondary">
+            <li key={`gap-${i}`} aria-hidden className="px-1 text-label-secondary max-sm:hidden">
               …
             </li>
           ) : (
@@ -60,7 +60,7 @@ export function Pagination({ page, pageCount, onPageChange, className }: Paginat
                 className={cx(
                   item,
                   p === page &&
-                    "bg-accent-fill font-semibold text-on-accent data-hovered:bg-accent-fill",
+                    "forced-selected bg-accent-fill font-semibold text-on-accent data-hovered:bg-accent-fill",
                 )}
               >
                 {p}
