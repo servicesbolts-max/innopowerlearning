@@ -1,2 +1,2 @@
-// Drizzle table definitions. The first tenant tables arrive in P2 (skill: add-tenant-table).
-export {};
+// Drizzle table definitions. New tenant tables follow the add-tenant-table skill.
+export * from "./tenancy";

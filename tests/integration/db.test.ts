@@ -1,6 +1,6 @@
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { runMigrations, setRuntimeLoginPassword } from "@/db/migrate";
+import { listMigrationFiles, runMigrations, setRuntimeLoginPassword } from "@/db/migrate";
 
 // Requires a running Postgres (docker compose up -d, or the CI service container).
 try {
@@ -78,7 +78,7 @@ describe("foundation migrations", () => {
   it("are idempotent: a second run applies nothing", async () => {
     const second = await runMigrations(owner);
     expect(second.applied).toEqual([]);
-    expect(second.skipped).toEqual(["0000_foundation.sql", "0001_runtime_login.sql"]);
+    expect(second.skipped).toEqual(await listMigrationFiles());
   });
 
   it("install pgvector, pg_trgm and citext", async () => {

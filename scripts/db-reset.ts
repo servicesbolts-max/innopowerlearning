@@ -13,7 +13,14 @@ try {
 const sql = ownerConnection(e, "db:reset");
 try {
   // Local development only (guarded above): recreate the public schema.
-  await sql.unsafe(`drop schema if exists public cascade; create schema public;`);
+  // Recreate it as a fresh database has it (owner pg_database_owner, USAGE for PUBLIC);
+  // migration 0001 then revokes CREATE. Without the USAGE grant, app_login would see
+  // "relation does not exist" where a fresh database says "permission denied".
+  await sql.unsafe(
+    `drop schema if exists public cascade;
+     create schema public authorization pg_database_owner;
+     grant usage on schema public to public;`,
+  );
   console.log("db:reset: local public schema recreated.");
 } catch (error) {
   console.error(`db:reset failed: ${describeError(error)}`);
