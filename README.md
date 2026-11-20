@@ -7,7 +7,7 @@ A multi-tenant learning platform for Innopower AI and its partners. One codebase
 - Node.js 26 LTS (`.nvmrc`) and pnpm 12 (`npm i -g pnpm@12`)
 - Git
 - One development Postgres:
-  - **Option A (default):** Docker Desktop, which also runs Redis, MinIO and Mailpit.
+  - **Option A (default):** Docker Desktop (on Windows it needs WSL 2: `wsl --install --no-distribution` in an admin shell, then reboot). It also runs Redis, S3-compatible storage (RustFS) and Mailpit.
   - **Option B:** a hosted dev Postgres 16+ with the `vector` extension available (Neon or Supabase).
 
 ## Quick start (clean clone)
@@ -23,7 +23,7 @@ pnpm dev
 
 Then open <http://localhost:3000> and check <http://localhost:3000/api/ready>, which should return `{"status":"ok"}`.
 
-Local services (Option A): Postgres `localhost:5432`, Redis `6379`, MinIO API `9000` and console <http://localhost:9001>, Mailpit UI <http://localhost:8025>.
+Local services (Option A): Postgres `localhost:5432`, Redis `6379`, S3 storage API `9000` (bucket `innopower-dev` is created automatically) and console <http://localhost:9001>, Mailpit UI <http://localhost:8025>.
 
 ### Option B: hosted development Postgres
 

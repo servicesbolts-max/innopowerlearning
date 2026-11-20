@@ -25,6 +25,8 @@ Decisions made while building, so they can be reviewed and reversed. Newest at t
 - **CI** pins every action to a full commit SHA (version in a comment) and lhci to an exact version. Compose ports bind to `127.0.0.1`.
 - **Architecture lint:** `eslint-plugin-boundaries` enforces the layers, and `no-restricted-imports` blocks deep cross-module imports and `src/db` imports from UI code.
 - **CI evidence:** no GitHub remote yet, and Claude may not push. The workflow is schema-validated, and each CI command is run locally. The first remote run happens when the owner pushes.
-- **Docker image tags:** Postgres (`pgvector/pgvector:pg17`) and Redis (`redis:7-alpine`) are pinned. MinIO and Mailpit use `latest` for local development only.
+- **Docker images** are pinned by digest in `docker-compose.yml`: pgvector pg17, Redis 7, RustFS 1.0.6, AWS CLI 2.41.2 and Mailpit 1.34.0.
+- **Local object storage is RustFS, not MinIO** (ADR 0002). MinIO's images are no longer pullable from Docker Hub or Quay (checked 2026-11-20). The app talks plain S3 through `S3_*` env vars, so the choice is local-only and reversible. Production remains Cloudflare R2.
+- **`NODE_ENV` is not in `.env.example`.** Next.js sets it, and a shell-exported `NODE_ENV=development` makes `next build` fail while prerendering `/_global-error`. Found while running the P0 database checks.
 - **Lighthouse CI** assertions are `warn` until P14, when they become `error`.
 - **Spec conflict for P1:** Section 7.2 `--label-secondary` (light `rgba(60,60,67,.60)`) composites to #8A8A8E on white, which is 3.43:1. That fails WCAG AA (4.5:1) for body text; axe caught it in the P0 smoke test. The hub page uses `--label` for body text. P1 must either restrict the secondary label to large or non-essential text, or darken it until it passes.
