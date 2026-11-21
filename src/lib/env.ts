@@ -33,6 +33,26 @@ export const serverEnvSchema = z.object({
   SMTP_URL: z.string().optional(),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   ALLOW_DEMO_SEED: booleanString,
+  /** Signs session cookies and encrypts 2FA secrets. Required in production (32+ characters). */
+  BETTER_AUTH_SECRET: z
+    .string()
+    .min(32, "BETTER_AUTH_SECRET must be at least 32 characters")
+    .optional(),
+  /** Sender for auth email (magic links, invitations). */
+  MAIL_FROM: z.string().min(3).default("Innopower Learn <no-reply@innopower.localhost>"),
+  /**
+   * The request header that carries the real client IP, set (overwritten) by the edge in front of
+   * the app, e.g. cf-connecting-ip or x-real-ip. Used for auth rate limits. Clients can forge any
+   * header the edge does not overwrite.
+   */
+  AUTH_IP_HEADER: z.string().min(1).default("x-forwarded-for"),
+  /** Have I Been Pwned password check: "auto" = on in staging and production. */
+  PASSWORD_BREACH_CHECK: z.enum(["auto", "true", "false"]).default("auto"),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  MICROSOFT_CLIENT_ID: z.string().optional(),
+  MICROSOFT_CLIENT_SECRET: z.string().optional(),
+  MICROSOFT_TENANT_ID: z.string().default("common"),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -52,6 +72,11 @@ export function parseEnv(source: Record<string, string | undefined>): ServerEnv 
     throw new EnvValidationError([
       "APP_ENV: required when NODE_ENV=production (development, preview, staging or production)",
     ]);
+  }
+  // Better Auth falls back to a well-known secret in development; never on a real deployment.
+  const deployed = source.APP_ENV === "staging" || source.APP_ENV === "production";
+  if (deployed && !source.BETTER_AUTH_SECRET) {
+    throw new EnvValidationError([`BETTER_AUTH_SECRET: required when APP_ENV=${source.APP_ENV}`]);
   }
   const result = serverEnvSchema.safeParse(source);
   if (!result.success) {

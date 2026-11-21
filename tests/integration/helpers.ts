@@ -61,6 +61,11 @@ const CHILD_TABLES = [
 
 /** Removes fixture tenants and every row they own (child tables first). */
 export async function dropTenants(owner: postgres.Sql, ids: string[]) {
+  // Sessions are bound to a tenant; they are identity rows, so they go as app_auth.
+  await owner.begin(async (tx) => {
+    await tx`set local role app_auth`;
+    await tx`delete from sessions where tenant_id in ${tx(ids)}`;
+  });
   for (const id of ids) {
     await owner.begin(async (tx) => {
       await tx`select set_config('app.tenant_id', ${id}, true)`;

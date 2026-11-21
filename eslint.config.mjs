@@ -17,7 +17,8 @@ const DEEP_MODULE = {
 };
 const RAW_CONNECTION = {
   group: ["@/db/client", "**/db/client", "postgres", "drizzle-orm/postgres-js"],
-  message: "Only src/modules/tenancy (withTenant) and src/db open database connections.",
+  message:
+    "Only src/modules/tenancy (withTenant), src/modules/auth/db.ts and src/db open database connections.",
 };
 const UI_NO_DB = {
   group: ["@/db", "@/db/*", "**/db", "**/db/*"],
@@ -85,8 +86,9 @@ export default defineConfig([
     rules: { "no-restricted-imports": restrict(UI_NO_DB, DEEP_MODULE, RAW_CONNECTION) },
   },
   {
-    // The only places allowed to open connections. Everything else uses withTenant.
-    files: ["src/db/**/*.{ts,tsx}", "src/modules/tenancy/**/*.{ts,tsx}"],
+    // The only places allowed to open connections. Everything else uses withTenant. The auth
+    // pool (src/modules/auth/db.ts) runs as app_auth and reaches identity tables only (ADR 0004).
+    files: ["src/db/**/*.{ts,tsx}", "src/modules/tenancy/**/*.{ts,tsx}", "src/modules/auth/db.ts"],
     rules: { "no-restricted-imports": restrict(DEEP_MODULE) },
   },
   globalIgnores([

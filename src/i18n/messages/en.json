@@ -380,5 +380,21 @@
     "skipToContent": "Skip to content",
     "titleTemplate": "%s · {name}",
     "back": "Back to {name}"
+  },
+  "email": {
+    "magicLink": {
+      "subject": "Your sign-in link for {org}",
+      "heading": "Sign in to {org}",
+      "body": "Use the link below to sign in. It works once and expires in 10 minutes.",
+      "action": "Sign in",
+      "footer": "If you did not ask for this email, you can ignore it. Nobody can sign in without the link."
+    },
+    "invitation": {
+      "subject": "You are invited to {org}",
+      "heading": "Join {org}",
+      "body": "You have been invited to join {org} on {product}. The invitation expires in {days} days.",
+      "action": "Accept the invitation",
+      "footer": "If you were not expecting this invitation, you can ignore this email."
+    }
   }
 }

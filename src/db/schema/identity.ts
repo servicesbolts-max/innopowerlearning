@@ -81,6 +81,7 @@ export const sessions = pgTable("sessions", {
   userAgent: text("user_agent"),
   impersonatedBy: uuid("impersonated_by"),
   impersonationReason: text("impersonation_reason"),
+  impersonationExpiresAt: ts("impersonation_expires_at"),
   createdAt: ts("created_at").notNull().defaultNow(),
   updatedAt: ts("updated_at").notNull().defaultNow(),
 });

@@ -17,9 +17,11 @@ describe("parseEnv", () => {
 
   it("requires an explicit APP_ENV on a production server (no dev defaults in prod)", () => {
     expect(() => parseEnv({ ...valid, NODE_ENV: "production" })).toThrow(/APP_ENV/);
-    expect(parseEnv({ ...valid, NODE_ENV: "production", APP_ENV: "staging" }).APP_ENV).toBe(
-      "staging",
-    );
+    const secret = "s".repeat(32);
+    expect(
+      parseEnv({ ...valid, NODE_ENV: "production", APP_ENV: "staging", BETTER_AUTH_SECRET: secret })
+        .APP_ENV,
+    ).toBe("staging");
   });
 
   it("builds link origins without database settings, defaulting to https", () => {
@@ -29,6 +31,15 @@ describe("parseEnv", () => {
     expect(siteOrigin(undefined, siteEnv({ ROOT_DOMAIN: "learn.example.org" }))).toBe(
       "https://learn.example.org",
     );
+  });
+
+  it("requires BETTER_AUTH_SECRET on staging and production, never in development", () => {
+    expect(() => parseEnv({ ...valid, APP_ENV: "production" })).toThrow(/BETTER_AUTH_SECRET/);
+    expect(() => parseEnv({ ...valid, APP_ENV: "staging" })).toThrow(/BETTER_AUTH_SECRET/);
+    expect(parseEnv({ ...valid, APP_ENV: "development" }).BETTER_AUTH_SECRET).toBeUndefined();
+    expect(() =>
+      parseEnv({ ...valid, APP_ENV: "production", BETTER_AUTH_SECRET: "too-short" }),
+    ).toThrow(/32 characters/);
   });
 
   it("fails fast when DATABASE_URL is missing", () => {

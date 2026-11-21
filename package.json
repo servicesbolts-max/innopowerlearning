@@ -41,10 +41,10 @@
     ]
   },
   "dependencies": {
-    "@better-auth/passkey": "1.7.27",
+    "@better-auth/passkey": "1.7.18",
     "@internationalized/date": "^3.12.4",
     "@node-rs/argon2": "2.2.2",
-    "better-auth": "1.7.27",
+    "better-auth": "1.7.18",
     "drizzle-orm": "^0.45.4",
     "lucide-react": "^1.76.0",
     "next": "16.4.6",

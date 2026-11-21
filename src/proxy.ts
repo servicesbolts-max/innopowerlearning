@@ -55,6 +55,9 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next({ request: { headers } });
     }
     case "rewrite": {
+      // Pages and their server actions learn their tenant from the same trusted headers.
+      headers.set(TENANT_ID_HEADER, decision.tenant.id);
+      headers.set(TENANT_SLUG_HEADER, decision.tenant.slug);
       const url = request.nextUrl.clone();
       url.pathname = decision.pathname;
       return NextResponse.rewrite(url, { request: { headers } });
