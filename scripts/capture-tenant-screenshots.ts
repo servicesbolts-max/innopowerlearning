@@ -13,7 +13,9 @@ import path from "node:path";
 import { chromium } from "@playwright/test";
 
 const base = new URL(process.env.BASE_URL ?? "http://localhost:3100");
-const outDir = path.resolve(process.argv[2] ?? "docs/screenshots/p2");
+/** Which package's screens to capture: SCREENSHOTS=p2 (default) or p3 (auth). */
+const PKG = process.env.SCREENSHOTS === "p3" ? "p3" : "p2";
+const outDir = path.resolve(process.argv[2] ?? `docs/screenshots/${PKG}`);
 type Host = "hub" | "lsetf" | "wapsea" | "gods-entrepreneurs" | "wvstu";
 /** Every host's home, plus the secondary screens P2 adds (once each, on one host). */
 const SCREENS: { host: Host; path: string; name: string; status?: number }[] = [
@@ -29,6 +31,13 @@ const SCREENS: { host: Host; path: string; name: string; status?: number }[] = [
   { host: "lsetf", path: "/sign-in", name: "lsetf-sign-in" },
   { host: "hub", path: "/no-such-page", name: "not-found", status: 404 },
 ];
+
+/** P3: the public auth screens (signed-in screens are covered by axe in e2e/auth.spec.ts). */
+const AUTH_SCREENS: typeof SCREENS = [
+  { host: "lsetf", path: "/sign-in", name: "lsetf-sign-in" },
+  { host: "wvstu", path: "/sign-up", name: "wvstu-sign-up" },
+  { host: "lsetf", path: "/invite/not-a-real-invitation-token-000", name: "lsetf-invite-invalid" },
+];
 const WIDTHS = [390, 1280] as const;
 const SCHEMES = ["light", "dark"] as const;
 
@@ -39,7 +48,7 @@ async function main() {
   mkdirSync(outDir, { recursive: true });
   const browser = await chromium.launch();
   try {
-    for (const screen of SCREENS) {
+    for (const screen of PKG === "p3" ? AUTH_SCREENS : SCREENS) {
       for (const width of WIDTHS) {
         for (const scheme of SCHEMES) {
           const page = await browser.newPage({
@@ -57,7 +66,10 @@ async function main() {
           const height = await page.evaluate(() => document.documentElement.scrollHeight);
           await page.setViewportSize({ width, height });
           await page.waitForTimeout(300);
-          const file = path.join(outDir, `tenant-${screen.name}-${width}-${scheme}.png`);
+          const file = path.join(
+            outDir,
+            `${PKG === "p3" ? "auth" : "tenant"}-${screen.name}-${width}-${scheme}.png`,
+          );
           await page.screenshot({ path: file });
           console.log(`saved ${path.relative(process.cwd(), file)}`);
           await page.close();
