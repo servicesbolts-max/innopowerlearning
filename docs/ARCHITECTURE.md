@@ -36,6 +36,11 @@ flowchart LR
 | `tenant_settings` | tenant (one row)                                                | tenant_id; composite FK to its active theme | all                                                                     |
 | `feature_flags`   | tenant                                                          | tenant_id                                   | select                                                                  |
 
+| `memberships` | tenant | tenant_id | all; a user's role in one tenant |
+| `invitations` | tenant | tenant_id | all; hashed single-use tokens |
+| `audit_logs` | tenant | tenant_id | insert and select only; append-only trigger |
+| `users` and identity tables | global (ADR 0004) | `app_auth` only; `users` readable by `app_user` for current-tenant members | none, except those `users` columns |
+
 Every tenant table is registered in `tests/integration/tenant-tables.ts`, and the isolation suite runs the 7 checks of `.claude/rules/db.md` on each. New tables follow the `add-tenant-table` skill.
 
 ## Layers (enforced by ESLint)
@@ -50,13 +55,14 @@ Every tenant table is registered in `tests/integration/tenant-tables.ts`, and th
 
 ## Database roles
 
-| Role                         | Login | Used by                              | Can do                                                        |
-| ---------------------------- | ----- | ------------------------------------ | ------------------------------------------------------------- |
-| owner (`DATABASE_OWNER_URL`) | yes   | `scripts/db-*.ts`, tests             | owns every object; runs migrations                            |
-| `app_login` (`DATABASE_URL`) | yes   | the app                              | nothing on its own; may `set role` to the two below           |
-| `app_user`                   | no    | `withTenant`                         | table grants; subject to forced RLS on `app.tenant_id`        |
-| `app_platform`               | no    | audited Super Admin paths (P11)      | explicit platform policies; no BYPASSRLS                      |
-| `app_resolver`               | no    | owns the pre-tenant lookup functions | a few columns of `tenants` and `tenant_domains`; no BYPASSRLS |
+| Role                         | Login | Used by                                     | Can do                                                        |
+| ---------------------------- | ----- | ------------------------------------------- | ------------------------------------------------------------- |
+| owner (`DATABASE_OWNER_URL`) | yes   | `scripts/db-*.ts`, tests                    | owns every object; runs migrations                            |
+| `app_login` (`DATABASE_URL`) | yes   | the app                                     | nothing on its own; may `set role` to the two below           |
+| `app_user`                   | no    | `withTenant`                                | table grants; subject to forced RLS on `app.tenant_id`        |
+| `app_platform`               | no    | audited Super Admin paths (P11)             | explicit platform policies; no BYPASSRLS                      |
+| `app_resolver`               | no    | owns the pre-tenant lookup functions        | a few columns of `tenants` and `tenant_domains`; no BYPASSRLS |
+| `app_auth`                   | no    | Better Auth's pool (src/modules/auth/db.ts) | identity tables only, a few `tenants` columns; no BYPASSRLS   |
 
 ## Isolation layers
 
@@ -64,4 +70,16 @@ Every tenant table is registered in `tests/integration/tenant-tables.ts`, and th
 2. A data-access layer that cannot run a query without a `TenantContext` (`withTenant` in `src/modules/tenancy/with-tenant.ts`).
 3. Postgres RLS with `FORCE ROW LEVEL SECURITY`, under a role without BYPASSRLS (roles created in `0000_foundation.sql`).
 
-_Status: through P2. Sections are filled in as packages land._
+## Authentication (P3)
+
+```mermaid
+flowchart LR
+  F[Sign-in form on tenant host] -->|/api/auth/*| P[proxy: x-tenant-id]
+  P --> BA[Better Auth<br/>app_auth pool]
+  BA -->|session.create.before| AD[admission: policy.ts<br/>withTenant memberships, invitations, audit]
+  AD -->|allow| S[(sessions.tenant_id = host's tenant)]
+  PG[Pages and server actions] -->|getTenantSession tenantId| BA
+  PG -->|defineAction: 2FA gate, Zod, can, audited withTenant| DB[(tenant tables)]
+```
+
+_Status: through P3. Sections are filled in as packages land._

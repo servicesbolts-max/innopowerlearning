@@ -33,9 +33,28 @@ Checklist: OWASP ASVS Level 2 (`docs/MASTER_PROMPT.md` Section 10). Each package
 - **Tests:** a data-driven isolation suite runs as the runtime login. A catalog test fails if any table with `tenant_id` lacks a registry entry, forced RLS or a policy.
 - **Theme and logo data** are validated on read: an invalid stored theme falls back to the default, so it cannot inject CSS. Logos are typed monogram data, never markup.
 
+## Controls added in P3
+
+- **Identity separated by database role (ADR 0004):** Better Auth runs as `app_auth`, which reaches only the identity tables (users, accounts, sessions, verifications, TOTP secrets, passkeys, rate limits). It cannot read any tenant table. Tenants (`app_user`) see a few columns of their own members only, never credentials, sessions or secrets.
+- **Passwords:** Argon2id (19 MiB, 2 iterations, 1 lane), 10 to 128 characters. A breached-password check (k-anonymity) runs in staging and production. Only Argon2id hashes verify; anything else fails closed.
+- **Sessions:**
+  - Bound to the tenant host they were created on; other hosts' sessions are rejected server-side.
+  - Host-only, httpOnly cookies, `Secure` outside development, capped by the tenant's session length.
+  - Same-origin trusted origins (CSRF). Auth forms POST even before hydration.
+- **Admin two-step verification:** TOTP (encrypted with `BETTER_AUTH_SECRET`, single-use backup codes) or a passkey is required for admin roles and platform staff. Magic links and OAuth are refused for them (OAuth is allowed on SSO-only tenants).
+- **Admission:** registration modes, suspended and pending members, and invitations are enforced when a session is created, not only in the UI. Invitations need a hashed, single-use, expiring token plus the invited address.
+- **Email verification and pre-hijacking:** password sign-ups need a confirmed address before any session. A magic link that proves an unverified address drops any password set on it first.
+- **Rate limits:** sign-in, sign-up, magic link, TOTP and backup codes, per client IP from `AUTH_IP_HEADER`, which staging and production must set to a header the edge overwrites.
+- **Redirects:** `next` and `callbackURL` accept same-origin paths only.
+- **Impersonation:** platform owner only (staff need an explicit grant), members only, never platform staff, required reason, hard deadline of 60 minutes or less. Password, 2FA, passkey, payment and impersonation permissions are blocked while active. Only reading the session, signing out and stopping are allowed while active, and nothing after the deadline. Start requires the platform user's own second factor. Start and stop are audited; a banner shows throughout.
+- **Security changes audited:** password, 2FA, backup codes, passkeys and session revocation.
+- **Audit log:** append-only (grants plus a trigger that blocks UPDATE everywhere, and DELETE for app roles). Metadata is validated to hold no PII or secrets.
+- **Server actions:** `defineAction` runs a session check (tenant-bound), the 2FA gate, Zod validation and `can()`, then writes the change and its audit entry in one transaction.
+- **Secrets:** `BETTER_AUTH_SECRET` is required in staging and production; production servers refuse Better Auth's default secret.
+
 ## To come
 
-CSP with nonces (P1/P2), CSRF and rate limits (P3), Argon2id and 2FA (P3), upload and webhook rules (P4b, P9), backup and restore drill (P14).
+CSP with nonces (P14 hardening), upload and webhook rules (P4b, P9), passkeys on custom domains (P10d), backup and restore drill (P14).
 
 ## Reporting a vulnerability
 

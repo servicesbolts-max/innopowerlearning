@@ -12,6 +12,16 @@
 - A `MigrationChecksumError` means a committed migration was edited: revert it and add a new migration.
 - Demo data: `pnpm db:seed` (idempotent; refused in production unless `ALLOW_DEMO_SEED=true`). It prints each tenant's URL.
 
+## Accounts and sign-in (local)
+
+- `pnpm db:seed` creates demo accounts and prints their passwords once: `owner@demo.test` (platform owner, Hub), and `admin.`, `instructor.` and `learner.<slug>@demo.test` for each partner, plus `sponsor.lsetf@demo.test`. `pnpm db:seed --rotate-demo-passwords` prints new ones.
+- Admins must set up two-step verification on first sign-in (`/account/security`). Any authenticator app works.
+- Emails (magic links, invitations) go to Mailpit: http://localhost:8025.
+- `next start` (production mode) needs `BETTER_AUTH_SECRET` (32+ characters) in the environment; `pnpm dev` warns and uses a development default. Generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
+- Passkeys need a registrable root domain: browsers refuse `localhost` for `*.localhost` pages. Use `ROOT_DOMAIN=lvh.me:3000` to try them locally.
+- Behind a proxy or CDN, set `AUTH_IP_HEADER` to the client-IP header it overwrites (`cf-connecting-ip`, `x-real-ip`), or rate limits can be dodged.
+- E2E: `ROOT_DOMAIN=localhost:3100 pnpm build`, start on port 3100 with the same `ROOT_DOMAIN` and a `BETTER_AUTH_SECRET`, keep Mailpit running, then `E2E_BASE_URL=http://localhost:3100 pnpm e2e`.
+
 ## Tenant hosts (local)
 
 - The Hub is `http://localhost:3000`. Tenants are `http://{slug}.localhost:3000`: `lsetf`, `wapsea`, `gods-entrepreneurs` and `wvstu`. Chrome, Edge and Firefox resolve `*.localhost` to loopback without any setup.

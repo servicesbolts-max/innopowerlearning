@@ -1,6 +1,6 @@
 # Progress
 
-Current package: **P3 Auth and RBAC** (not started). Start it in a fresh session with `/phase P3`.
+Current package: **P4a Course schema and authoring** (not started). Start it in a fresh session with `/phase P4a`.
 
 ## Log
 
@@ -39,13 +39,24 @@ Current package: **P3 Auth and RBAC** (not started). Start it in a fresh session
     - Security: 2 medium fixed (domain squatting, `APP_ENV` fail-open) and 3 low fixed.
     - a11y: 1 high fixed (the focus ring was hidden on plain links), 3 medium and 6 low fixed.
     - Code review: 4 fixed, 3 deferred and documented in ASSUMPTIONS.
+- **P3 Auth and RBAC: done 2026-11-21, tag `wp-P3-done`.**
+  - Schema: `0004` (role `app_auth`; global identity tables with forced RLS; tenant tables `memberships`, `invitations`, append-only `audit_logs`; registration and 2FA settings), `0005` (impersonation deadline), `0006` (optional names).
+  - `src/modules/rbac`: `can()` with the nine Section 4 roles, scopes and the impersonation deny-list. `src/modules/audit`: PII-free metadata.
+  - `src/modules/auth`: Better Auth 1.7.18 on its own `app_auth` pool; tenant-bound sessions; admission policy for the five registration modes; Argon2id; email verification; magic link (Mailpit locally); TOTP; passkeys; OAuth when configured; database rate limits; impersonation mechanism; `defineAction`.
+  - UI: tenant `/sign-in` (with the 2FA step), `/sign-up`, `/invite/[token]`, `/account/security`, a guarded `/admin` placeholder, account nav and impersonation banner.
+  - Seed: demo accounts with one-time printed passwords (`--rotate-demo-passwords`). Skill: `/add-server-action`. ADR 0004.
+  - Evidence:
+    - Gate: 1572 unit tests, including the full role × permission matrix.
+    - Integration: 117 passed, 6 skipped (isolation checks on the new tables, `users` RLS, `app_auth` reach, audit append-only, session binding, invitations, pre-hijacking).
+    - E2E: 94 passed, 2 skipped (passkeys need a non-localhost rpID) on `:3100`, including admin 2FA enforcement on both device projects and axe on every new screen.
+    - Screenshots: 12 PNGs in `docs/screenshots/p3/` (sign-in, sign-up, invitation × 390/1280 × light/dark).
+  - Reviews: isolation (1 high: impersonation escape, fixed), security (8, fixed), a11y (4 medium, 7 low, fixed), code review (6 fixed, 1 documented exception). Deferred items are in ASSUMPTIONS.
 
-## Notes for P3
+## Notes for P4a
 
-- Identity tables (`users`, `memberships`, `profiles`, `roles`, `sessions`, `accounts`) and demo accounts belong to P3 (owner decision). Follow `/add-tenant-table` for each tenant table, and register it in `tests/integration/tenant-tables.ts`. `users` is global: give it a policy that shows only users with a membership in the current tenant.
-- Sessions are scoped to the tenant host. The tenant's `/sign-in` page is a placeholder at `src/app/t/[tenant]/(tenant-public)/sign-in`.
-- Seed the demo accounts in `scripts/seed/seed-demo.ts` (idempotent; write with `app.tenant_id` set; print generated passwords once).
-- Rate limits: add one for custom-domain misses in the proxy too.
-- When suspension or rename lands (P11), expire `tenant-slug:<slug>` and `tenant:<id>` and clear the proxy host cache.
-- E2E: another `next dev` often runs in this folder. Build and serve with `ROOT_DOMAIN=localhost:3100` (Hub links to tenants are absolute, baked in at build, and the E2E checks the full origin): `ROOT_DOMAIN=localhost:3100 pnpm build`, start on port 3100 with the same `ROOT_DOMAIN`, then `E2E_BASE_URL=http://localhost:3100 pnpm e2e`. `TaskStop` on `pnpm start` can leave the node child running; start the server with `node node_modules/next/dist/bin/next start --port 3100`.
-- Claude does not push. The owner runs `git push` after each package.
+- Every state-changing server action goes through `defineAction` (`/add-server-action`): it checks the tenant-bound session, the 2FA gate, Zod and `can()`, and audits inside `withTenant`. Add new permissions to `src/modules/rbac/permissions.ts` and to the literal matrix in `permissions.test.ts`.
+- Course tables reference members through `users.id` or `memberships`; follow `/add-tenant-table` and register each table in `tests/integration/tenant-tables.ts`.
+- Demo instructors exist per tenant (`instructor.<slug>@demo.test`); rotate passwords with `pnpm db:seed --rotate-demo-passwords`.
+- E2E: build and serve with `ROOT_DOMAIN=localhost:3100` and a throwaway `BETTER_AUTH_SECRET` (production refuses the default), start with `node node_modules/next/dist/bin/next start --port 3100`, keep Mailpit running, then `E2E_BASE_URL=http://localhost:3100 pnpm e2e`. Sign-in helpers are in `e2e/auth.spec.ts`, fixtures in `e2e/fixtures/`.
+- Still open from P2: when suspension or rename lands (P11), expire `tenant-slug:<slug>` and `tenant:<id>` and clear the proxy host cache; rate-limit custom-domain misses in the proxy.
+- Claude does not push. The owner pushes after each package.

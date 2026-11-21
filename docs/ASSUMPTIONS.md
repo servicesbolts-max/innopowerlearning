@@ -106,3 +106,49 @@ Decisions made while building, so they can be reviewed and reversed. Newest at t
   - **Deferred:**
     - `app_login` can `set role app_platform` from inside any transaction. P11 must scope platform policies `TO app_platform`, and allow that role switch only in the audited module (lint or test).
     - Rate-limiting custom-domain misses per client comes with the P3 rate limits.
+
+## P3 (2026-11-21)
+
+- **Auth architecture (owner decision, ADR 0004):** Better Auth handles identity only, through the `app_auth` role and its own pool. Memberships, invitations and the audit log are RLS tenant tables. The organization plugin is not used.
+- **Scope (owner decisions):** all sign-in methods in P3: password, magic link, TOTP, passkeys, and Google/Microsoft OAuth when credentials are set. Impersonation is a mechanism only; the Console UI to start it is P11b.
+- **Better Auth 1.7.18, not 1.7.27:** 1.7.27 was a day old, inside pnpm's minimum-release-age window, and pnpm had silently added exemptions for it. The exemptions were reverted and the lockfile rebuilt.
+- **Roles:**
+  - Platform roles live on `users.platform_role`; tenant roles live on `memberships.role`.
+  - Roles are code-defined bundles of permission strings with `any`, `own` or `assigned` scopes (`src/modules/rbac`). Tenant-defined custom roles come later.
+  - An explicitly null owner never counts as "own". An undefined owner means a tenant-wide action, such as creating something new.
+- **Admission rules** (`src/modules/auth/policy.ts`):
+  - Hub and Console admit platform staff only. Platform staff may enter any partner host without a membership.
+  - `application` mode records a pending membership and refuses the session until approval (P8a).
+  - Suspended and pending members are refused.
+  - An invitation needs both its token (a 30-minute httpOnly cookie set from the invitation page) and a session for the invited address.
+- **Admin two-step verification:** required for tenant admins and program managers (per tenant, `require_admin_2fa`, default on) and always for platform staff.
+  - Accepted second factors: TOTP, or a passkey.
+  - Magic links are refused for these roles; so is OAuth, except on SSO-only tenants, where the identity provider owns MFA.
+  - Admin pages redirect to account security until a factor exists.
+- **Impersonation:**
+  - Platform owner (or staff with an explicit grant), members of the current tenant only, never platform staff, a reason of at least 10 characters, at most 60 minutes.
+  - The deadline is stored separately (0005), because Better Auth extends `expires_at` on use. The admin's own session is kept in a signed cookie and restored on stop.
+- **Sessions:**
+  - 7 days, refreshed daily, capped by the tenant's `session_hours`, and bound to `tenant_id`. Cookies are host-only, with prefix `il`.
+  - Trusted origins: the request's own origin only.
+- **Rate limits:** database store; sign-in and sign-up 10 per minute, magic-link requests 5 per 5 minutes, TOTP 10 per minute, backup codes 5 per minute. Keyed by `AUTH_IP_HEADER`, which is required on staging and production (a header the edge overwrites, such as `cf-connecting-ip` or `x-real-ip`) and defaults to `x-forwarded-for` only in development and tests.
+- **Breached-password check (Have I Been Pwned):** on in staging and production, off in development and tests (`PASSWORD_BREACH_CHECK=auto`). Only a 5-character hash prefix leaves the server.
+- **Secrets:** `BETTER_AUTH_SECRET` is required in staging and production. Development falls back to Better Auth's default with a warning, and `next start` refuses the default. E2E servers use a throwaway secret; CI has a CI-only value.
+- **Magic links:** a refused verification (admission policy, expired token) is converted by the `/api/auth` route into a 303 redirect to `/sign-in?error=<code>`, never raw JSON. Better Auth keeps the error status, so its own redirect was not followed by browsers.
+- **Email verification:** password sign-ups get no session until the address is confirmed by the emailed link (24 hours). Confirming signs the person in, and admission still applies (an uninvited address on an invite-only tenant lands on `/sign-in?error=invite_required`).
+- **Account pre-hijacking:** when a magic link proves an address whose account was never verified, any password set on it is dropped before the session is created, so a password registered by someone else cannot open the account (`src/modules/auth/hardening.ts`).
+- **Impersonation guard:** a "view as" session may only read itself, sign out and stop. Every other auth endpoint (passkeys, 2FA, password, profile, sessions, sign-in) is refused, and nothing at all is served after the deadline. Starting checks the target is an active member of this host's tenant and that the platform user has TOTP or a passkey. The audit entry is written before the session exists, and holds the duration only (the reason text could contain personal data).
+- **Admins and unknown sign-in paths:** a method the policy cannot classify is refused for admin roles and platform staff (fail closed).
+- **Security changes are audited:** password change and reset, 2FA enable and disable, backup-code regeneration, passkey add and remove, and session revocation write an audit entry after Better Auth succeeds.
+- **Redirect targets** (`next`, `callbackURL`) are sanitized to same-origin paths (`src/lib/safe-next.ts`).
+- **`continueInvitation` has no `can()` check:** it runs before any account exists and only sets the invitation cookie after validating the token. It is the one documented exception to "every server action checks `can()`".
+- **Deferred:**
+  - Per-email rate limits (now per IP only).
+  - Account security as an inset grouped list, and field-level form errors (P10a polish).
+  - Signed-in screenshots of account security and `/admin` (the E2E covers both screens with axe).
+- **Users without names:** magic-link and OAuth sign-ups get the email's local part (0006 relaxed the name check).
+- **Forms:** auth inputs are disabled until hydration, because React Aria resets values typed earlier, and they POST if submitted before hydration, so a password never lands in a URL.
+- **Authorization refusals on tenant pages** render the not-found page with HTTP 200, not 404. The tenant layout's static shell streams first under partial prerendering. No protected content renders; tests assert content, not status.
+- **Passkeys:** the relying party is the ROOT_DOMAIN host, and accepted origins are added at runtime from proxy-validated hosts. Not on custom domains yet. Not testable on `*.localhost` (browsers refuse `localhost` as a relying party), so that E2E skips there; use `ROOT_DOMAIN=lvh.me:3000` to try passkeys locally.
+- **E2E:** auth tests run sequentially within each device project (Argon2 work would otherwise starve a local server). Fixtures are created in the database by Playwright's global setup and removed afterwards. Mailpit serves magic links and invitations. CI runs Mailpit as a service.
+- **Demo accounts:** `owner@demo.test`, plus `admin.`, `instructor.` and `learner.<slug>@demo.test`, and `sponsor.lsetf@demo.test`. Passwords are printed only when an account is created. `pnpm db:seed --rotate-demo-passwords` prints new ones; the seed guard still refuses production.
