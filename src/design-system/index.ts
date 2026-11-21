@@ -34,6 +34,7 @@ export * from "./components/Toast/Toast";
 export * from "./components/Progress/Progress";
 export * from "./components/Badge/Badge";
 export * from "./components/Avatar/Avatar";
+export * from "./components/Monogram/Monogram";
 export * from "./components/Card/Card";
 export * from "./components/Skeleton/Skeleton";
 export * from "./components/EmptyState/EmptyState";

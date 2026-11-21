@@ -60,7 +60,7 @@ Rules that the tests enforce:
 | Foundations    | Text (type scale), Icon (Lucide, 1.75 stroke, 16/20/24), Spinner                                                                                                                                    |
 | Actions        | Button (filled, tinted, gray, plain; small, medium, large; destructive; pending; pill), Link (inline is always underlined; standalone), Toolbar                                                     |
 | Inputs         | TextField, TextArea, SearchField (with filter tokens), Select, Switch (iOS proportions), SegmentedControl, Checkbox and CheckboxGroup, RadioGroup, Slider, Stepper, DatePicker, TimeField, Calendar |
-| Display        | Badge, Chip, Avatar and AvatarStack, Card, ProgressBar, ProgressRing, Skeleton and SkeletonGroup, EmptyState                                                                                        |
+| Display        | Badge, Chip, Avatar and AvatarStack, Monogram (organization initials on the accent fill), Card, ProgressBar, ProgressRing, Skeleton and SkeletonGroup, EmptyState                                   |
 | Lists and data | ListSection and ListRow (inset grouped, with chevrons), DataTable (sort, filter, column visibility, selection with bulk actions, sticky header, dense), Pagination, Disclosure and DisclosureGroup  |
 | Overlays       | Sheet (bottom sheet with a grabber under 768 px, centered above), AlertDialog (stacked buttons), ActionSheet, Popover, Menu, ContextMenu, Tooltip, Toast (with undo) and Banner                     |
 | Navigation     | Tabs, TabBar (phones), Sidebar (collapsible), NavigationBar (collapsing large title), Breadcrumbs, WizardStepper, SplitView                                                                         |
