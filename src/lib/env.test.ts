@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EnvValidationError, parseEnv } from "./env";
+import { EnvValidationError, parseEnv, siteEnv, siteOrigin } from "./env";
 
 const valid = { DATABASE_URL: "postgres://u:p@localhost:5432/db" };
 
@@ -19,6 +19,15 @@ describe("parseEnv", () => {
     expect(() => parseEnv({ ...valid, NODE_ENV: "production" })).toThrow(/APP_ENV/);
     expect(parseEnv({ ...valid, NODE_ENV: "production", APP_ENV: "staging" }).APP_ENV).toBe(
       "staging",
+    );
+  });
+
+  it("builds link origins without database settings, defaulting to https", () => {
+    expect(
+      siteOrigin("lsetf", siteEnv({ ROOT_DOMAIN: "localhost:3100", APP_ENV: "development" })),
+    ).toBe("http://lsetf.localhost:3100");
+    expect(siteOrigin(undefined, siteEnv({ ROOT_DOMAIN: "learn.example.org" }))).toBe(
+      "https://learn.example.org",
     );
   });
 

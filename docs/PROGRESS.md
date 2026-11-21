@@ -47,5 +47,5 @@ Current package: **P3 Auth and RBAC** (not started). Start it in a fresh session
 - Seed the demo accounts in `scripts/seed/seed-demo.ts` (idempotent; write with `app.tenant_id` set; print generated passwords once).
 - Rate limits: add one for custom-domain misses in the proxy too.
 - When suspension or rename lands (P11), expire `tenant-slug:<slug>` and `tenant:<id>` and clear the proxy host cache.
-- E2E: another `next dev` often runs in this folder. Use `pnpm build && pnpm start --port 3100`, then `E2E_BASE_URL=http://localhost:3100 pnpm e2e`. `TaskStop` on `pnpm start` can leave the node child running; start the server with `node node_modules/next/dist/bin/next start --port 3100`.
+- E2E: another `next dev` often runs in this folder. Build and serve with `ROOT_DOMAIN=localhost:3100` (Hub links to tenants are absolute, baked in at build, and the E2E checks the full origin): `ROOT_DOMAIN=localhost:3100 pnpm build`, start on port 3100 with the same `ROOT_DOMAIN`, then `E2E_BASE_URL=http://localhost:3100 pnpm e2e`. `TaskStop` on `pnpm start` can leave the node child running; start the server with `node node_modules/next/dist/bin/next start --port 3100`.
 - Claude does not push. The owner runs `git push` after each package.

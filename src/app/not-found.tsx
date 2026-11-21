@@ -1,7 +1,7 @@
 import { Compass } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { env } from "@/lib/env";
+import { siteOrigin } from "@/lib/env";
 import { PRODUCT_NAME } from "@/lib/config";
 import { PlaceholderPage } from "./_components/placeholder-page";
 
@@ -13,8 +13,7 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
  */
 export default async function NotFound() {
   const t = await getTranslations("hub.notFound");
-  const { ROOT_DOMAIN, APP_ENV } = env();
-  const hub = `${APP_ENV === "development" ? "http" : "https"}://${ROOT_DOMAIN}/`;
+  const hub = `${siteOrigin()}/`;
   return (
     <main id="main">
       <PlaceholderPage

@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { cachedResolver, decideRoute, resolveTenant } from "@/modules/tenancy";
+import {
+  cachedResolver,
+  decideRoute,
+  resolveTenant,
+  TENANT_ID_HEADER,
+  TENANT_SLUG_HEADER,
+} from "@/modules/tenancy";
 
 /**
  * Host-based tenant resolution (Section 3, isolation layer 1). Decides before anything renders,
@@ -39,6 +45,12 @@ export async function proxy(request: NextRequest) {
   switch (decision.type) {
     case "next":
       return NextResponse.next({ request: { headers } });
+    case "api": {
+      // Set after stripping, so the values can only come from host resolution.
+      headers.set(TENANT_ID_HEADER, decision.tenant.id);
+      headers.set(TENANT_SLUG_HEADER, decision.tenant.slug);
+      return NextResponse.next({ request: { headers } });
+    }
     case "rewrite": {
       const url = request.nextUrl.clone();
       url.pathname = decision.pathname;

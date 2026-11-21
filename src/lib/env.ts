@@ -63,6 +63,27 @@ export function parseEnv(source: Record<string, string | undefined>): ServerEnv 
   return result.data;
 }
 
+/**
+ * The two values that build public links (Hub ↔ tenant URLs, the 404 page). Read on their own so
+ * pages prerendered at build time do not need the database settings (a Docker build has none).
+ * APP_ENV is optional here: when unset, links use https, the safe choice for any real host.
+ */
+const siteEnvSchema = z.object({
+  ROOT_DOMAIN: z.string().min(1).default("localhost:3000"),
+  APP_ENV: z.enum(["development", "preview", "staging", "production"]).optional(),
+});
+export type SiteEnv = z.infer<typeof siteEnvSchema>;
+
+export function siteEnv(source: Record<string, string | undefined> = process.env): SiteEnv {
+  return siteEnvSchema.parse(source);
+}
+
+/** Absolute origin of a host under ROOT_DOMAIN (`sub` omitted for the Hub). */
+export function siteOrigin(sub?: string, e: SiteEnv = siteEnv()): string {
+  const scheme = e.APP_ENV === "development" ? "http" : "https";
+  return `${scheme}://${sub ? `${sub}.` : ""}${e.ROOT_DOMAIN}`;
+}
+
 let cached: ServerEnv | undefined;
 
 /** Validated server env. Throws EnvValidationError on first access if misconfigured. */

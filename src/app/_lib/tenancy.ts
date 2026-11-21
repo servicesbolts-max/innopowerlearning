@@ -1,5 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { env } from "@/lib/env";
+import { siteOrigin } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import {
   activeTenantIdForSlug,
@@ -48,16 +48,20 @@ export async function getPublicPartners(): Promise<PublicPartner[]> {
     cacheLife("minutes");
     return partners;
   } catch (error) {
-    // No database (for example a CI build without one): render an empty directory, retry soon.
+    // No database (for example a Docker build without one): render an empty directory and retry
+    // within minutes. Not "seconds": Next will not prerender entries that short, so the build
+    // would fail instead of falling back.
     logger.warn({ err: error }, "partner directory unavailable");
-    cacheLife("seconds");
+    cacheLife("minutes");
     return [];
   }
 }
 
-/** Absolute URL of a page on a tenant's subdomain. */
+/**
+ * Absolute URL of a page on a tenant's subdomain. ROOT_DOMAIN must name the host and port the
+ * site is served on (for example localhost:3100 for the E2E server); the proxy ignores ports,
+ * links cannot. Needs no database settings, so it also works while prerendering in a build.
+ */
 export function tenantUrl(slug: string, path = "/"): string {
-  const { ROOT_DOMAIN, APP_ENV } = env();
-  const scheme = APP_ENV === "development" ? "http" : "https";
-  return `${scheme}://${slug}.${ROOT_DOMAIN}${path}`;
+  return `${siteOrigin(slug)}${path}`;
 }

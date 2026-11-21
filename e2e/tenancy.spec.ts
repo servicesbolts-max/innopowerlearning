@@ -129,7 +129,8 @@ test.describe("hub", () => {
       const link = page.getByRole("link", {
         name: new RegExp(partner.name.replace(/[.]/g, "\\.")),
       });
-      await expect(link).toHaveAttribute("href", new RegExp(`//${partner.slug}\\.`));
+      // The exact origin, port included: ROOT_DOMAIN must match the host the server answers on.
+      await expect(link).toHaveAttribute("href", at(tenantHost(partner.slug)));
     }
     await expectNoAxeViolations(page);
   });
@@ -138,7 +139,7 @@ test.describe("hub", () => {
     await page.goto(at(base.hostname, "/sign-in"));
     await expect(page.getByRole("link", { name: "Sign in to LSETF" })).toHaveAttribute(
       "href",
-      /\/\/lsetf\.[^/]+\/sign-in$/,
+      at(tenantHost("lsetf"), "/sign-in"),
     );
     await expectNoAxeViolations(page);
   });

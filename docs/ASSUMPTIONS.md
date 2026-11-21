@@ -97,12 +97,12 @@ Decisions made while building, so they can be reviewed and reversed. Newest at t
 - **Stale dev types:** `.next/dev/types` is written only by `next dev` (`next typegen` writes `.next/types`). After moving a route, start the dev server once, or `tsc` fails on the old path.
 - **Review outcomes (2026-11-21):**
   - **APP_ENV is required when `NODE_ENV=production`.** The parsed default is `development`, which enables the path fallback and `http` links, so a production server that forgot it would fail open. Deployments (the Dockerfile, the hosting platform) must set it.
+  - **Tenant-host `/api/*`** is served by the root route handlers (Section 8). The proxy passes it through with `x-tenant-id` and `x-tenant-slug` set from host resolution, after stripping any client-sent `x-tenant-*` headers. Hub-host `/api` carries no tenant. Unknown or suspended tenant hosts get a 404.
   - **Proxy matcher:** only `_next/static`, `_next/image`, `favicon.ico` and the exact `/api/health` and `/api/ready` skip the proxy. Root-level public files (`/icon.png`) are passed through by `decideRoute`, so an extension can never smuggle `/t/...` or a hub page past the checks.
   - **Focus ring:** the `focus-ring` utility now also styles `:focus-visible` on elements that are not React Aria (`:not([data-rac])`). Before, it hid the focus outline on plain links. Tailwind drops later items of a selector list inside `@utility`, so each selector has its own block.
   - **Current page:** the shell nav uses `useSelectedLayoutSegments` (the route tree), not `usePathname`, because proxy rewrites make the browser URL differ from the prerendered path.
   - **ROOT_DOMAIN must include the port the site is served on** (`localhost:3100` for a production server on 3100). Hub links to tenants are absolute, and are baked in at build for prerendered pages. Host matching itself ignores the port.
-  - **`next build` validates the full server env** (the 404 page and tenant links read `ROOT_DOMAIN` and `APP_ENV`). CI provides it.
+  - **Link origins come from `siteEnv()`**, which reads only `ROOT_DOMAIN` and an optional `APP_ENV`, and uses https when `APP_ENV` is unset. A build with no database settings (the Docker build) succeeds: the partner directory falls back to empty for minutes (not seconds, which Next will not prerender), and tenants render on demand. The E2E checks full link origins, so build and serve E2E with `ROOT_DOMAIN=localhost:3100`.
   - **Deferred:**
-    - Tenant-host `/api/*` is rewritten under `/t/<slug>` today. Decide the API routing (pass-through with a trusted tenant header, or tenant-scoped route handlers) when `/api/v1` lands.
     - `app_login` can `set role app_platform` from inside any transaction. P11 must scope platform policies `TO app_platform`, and allow that role switch only in the audited module (lint or test).
     - Rate-limiting custom-domain misses per client comes with the P3 rate limits.

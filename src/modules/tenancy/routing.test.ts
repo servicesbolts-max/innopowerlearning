@@ -145,6 +145,30 @@ describe("cachedResolver", () => {
   });
 });
 
+describe("decideRoute: tenant-host API requests", () => {
+  it("serves /api from the root route handlers with the resolved tenant attached", async () => {
+    expect(await route("lsetf.localhost:3000", "/api/v1/courses")).toEqual({
+      type: "api",
+      tenant: LSETF,
+    });
+    expect(await route("learn.lsetf.example", "/api/webhooks/stripe")).toEqual({
+      type: "api",
+      tenant: LSETF,
+    });
+  });
+
+  it("refuses /api on unknown or suspended tenant hosts", async () => {
+    expect(await route("nope.localhost:3000", "/api/v1/courses")).toEqual({ type: "not-found" });
+    expect(await route("paused.localhost:3000", "/api/v1/courses")).toEqual({
+      type: "not-found",
+    });
+  });
+
+  it("leaves hub-host /api untouched (no tenant)", async () => {
+    expect(await route("localhost:3000", "/api/v1/courses")).toEqual({ type: "next" });
+  });
+});
+
 describe("decideRoute: static files", () => {
   it("serves root-level public files on tenant hosts as they are", async () => {
     expect(await route("lsetf.localhost:3000", "/icon.png")).toEqual({ type: "next" });

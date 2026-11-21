@@ -22,7 +22,9 @@ export { featureFlagKey, flagsForPreset, PRESET_FLAGS, type FeatureFlagKey } fro
 export {
   cachedResolver,
   decideRoute,
+  TENANT_ID_HEADER,
   TENANT_PREFIX,
+  TENANT_SLUG_HEADER,
   type RouteDecision,
   type RouteInput,
   type TenantResolver,

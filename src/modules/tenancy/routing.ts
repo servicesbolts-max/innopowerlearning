@@ -17,7 +17,16 @@ import { isPartnerSlug } from "./slugs";
 export type RouteDecision =
   | { type: "next" }
   | { type: "rewrite"; pathname: string; tenant: ResolvedTenant }
+  /** A tenant-host API request: served by the root route handler, with the tenant attached. */
+  | { type: "api"; tenant: ResolvedTenant }
   | { type: "not-found" };
+
+/**
+ * Request headers the proxy sets for tenant-host API requests. Clients can never send them:
+ * the proxy strips every incoming x-tenant-* header first.
+ */
+export const TENANT_ID_HEADER = "x-tenant-id";
+export const TENANT_SLUG_HEADER = "x-tenant-slug";
 
 export interface RouteInput {
   host: string | null;
@@ -81,6 +90,8 @@ export async function decideRoute(
       }
       const tenant = await resolve(target);
       if (!tenant || tenant.status !== "active") return NOT_FOUND;
+      // API routes live at the app root (Section 8: /api/v1, /api/webhooks), not under /t.
+      if (under(pathname, "/api")) return { type: "api", tenant };
       const rest = pathname === "/" ? "" : pathname;
       return { type: "rewrite", pathname: `${TENANT_PREFIX}/${tenant.slug}${rest}`, tenant };
     }
