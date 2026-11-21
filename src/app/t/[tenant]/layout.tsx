@@ -21,6 +21,14 @@ import { getTenantShell } from "../../_lib/tenancy";
  */
 const PLACEHOLDER = "__shell";
 
+/**
+ * Tenant routes await `params` outside Suspense on purpose: the branded shell (theme CSS, name,
+ * monogram) must render in the first byte, never as a neutral fallback that then changes color.
+ * Navigations into a tenant may therefore block; active tenants are prerendered and cached, so
+ * in practice they do not.
+ */
+export const instant = false;
+
 export async function generateStaticParams() {
   try {
     const partners = await listPublicPartners();

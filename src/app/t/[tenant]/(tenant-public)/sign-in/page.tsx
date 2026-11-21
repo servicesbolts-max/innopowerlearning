@@ -5,6 +5,9 @@ import { getTranslations } from "next-intl/server";
 import { PlaceholderPage } from "../../../../_components/placeholder-page";
 import { getTenantShell } from "../../../../_lib/tenancy";
 
+// Blocks on params by design: see the tenant layout.
+export const instant = false;
+
 type Props = { params: Promise<{ tenant: string }> };
 
 export async function generateMetadata(): Promise<Metadata> {

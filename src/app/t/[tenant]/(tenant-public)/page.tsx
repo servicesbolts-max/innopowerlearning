@@ -5,6 +5,9 @@ import { Icon, Monogram } from "@/design-system";
 import { PrimaryLink } from "../../../_components/shell";
 import { getTenantShell } from "../../../_lib/tenancy";
 
+// Blocks on params by design: see the tenant layout.
+export const instant = false;
+
 /** Tenant home. The block-built homepage replaces the body in P10c. */
 export default async function TenantHome({ params }: { params: Promise<{ tenant: string }> }) {
   const shell = await getTenantShell((await params).tenant);
