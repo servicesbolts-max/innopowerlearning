@@ -12,3 +12,11 @@ export {
 } from "./lookup";
 export { loadTenantShell, tenantLogoSchema, type TenantLogo, type TenantShell } from "./shell";
 export { featureFlagKey, flagsForPreset, PRESET_FLAGS, type FeatureFlagKey } from "./presets";
+export {
+  cachedResolver,
+  decideRoute,
+  TENANT_PREFIX,
+  type RouteDecision,
+  type RouteInput,
+  type TenantResolver,
+} from "./routing";

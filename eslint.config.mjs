@@ -81,7 +81,7 @@ export default defineConfig([
     },
   },
   {
-    files: ["src/app/**/*.{ts,tsx}", "src/design-system/**/*.{ts,tsx}"],
+    files: ["src/app/**/*.{ts,tsx}", "src/proxy.ts", "src/design-system/**/*.{ts,tsx}"],
     rules: { "no-restricted-imports": restrict(UI_NO_DB, DEEP_MODULE, RAW_CONNECTION) },
   },
   {
