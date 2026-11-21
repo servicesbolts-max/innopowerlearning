@@ -49,7 +49,15 @@ export async function createTenants(owner: postgres.Sql, list: FixtureTenant[]) 
   }
 }
 
-const CHILD_TABLES = ["tenant_settings", "feature_flags", "tenant_themes", "tenant_domains"];
+const CHILD_TABLES = [
+  "audit_logs",
+  "invitations",
+  "memberships",
+  "tenant_settings",
+  "feature_flags",
+  "tenant_themes",
+  "tenant_domains",
+];
 
 /** Removes fixture tenants and every row they own (child tables first). */
 export async function dropTenants(owner: postgres.Sql, ids: string[]) {

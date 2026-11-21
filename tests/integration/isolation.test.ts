@@ -12,7 +12,7 @@ import {
   ownerConnection,
   runtimeConnection,
 } from "./helpers";
-import { GLOBAL_TABLES, TENANT_TABLES } from "./tenant-tables";
+import { GLOBAL_TABLES, IDENTITY_TABLES, TENANT_TABLES } from "./tenant-tables";
 
 /**
  * Isolation for every tenant table (.claude/rules/db.md, checks 1-7), run through withTenant as
@@ -25,7 +25,8 @@ let runtime: postgres.Sql;
 const A = uuidv7();
 const B = uuidv7();
 // rows[tenant][table] = id of the fixture row
-const rows: Record<string, Record<string, string>> = { [A]: {}, [B]: {} };
+const USER = uuidv7();
+const rows: Record<string, Record<string, string>> = { [A]: { user: USER }, [B]: { user: USER } };
 
 const DENIED = /row-level security|permission denied/;
 
@@ -62,6 +63,11 @@ beforeAll(async () => {
     { id: A, slug: `iso-a-${A.slice(-6)}` },
     { id: B, slug: `iso-b-${B.slice(-6)}` },
   ]);
+  // A global fixture user for memberships (users is written only as app_auth).
+  await owner.begin(async (tx) => {
+    await tx`set local role app_auth`;
+    await tx`insert into users (id, name, email) values (${USER}, 'Fixture', ${`iso-${USER.slice(-8)}@example.org`})`;
+  });
   for (const tenantId of [A, B]) {
     await owner.begin(async (tx) => {
       await tx`select set_config('app.tenant_id', ${tenantId}, true)`;
@@ -83,6 +89,10 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await dropTenants(owner, [A, B]);
+  await owner.begin(async (tx) => {
+    await tx`set local role app_auth`;
+    await tx`delete from users where id = ${USER}`;
+  });
   await runtime?.end({ timeout: 5 });
   await owner.end({ timeout: 5 });
 });
@@ -96,17 +106,18 @@ describe("schema catalog", () => {
     expect(tables.map((t) => t.relname).filter((t) => !known.has(t))).toEqual([]);
   });
 
-  it("puts a tenant_id column on every registered tenant table, and on no global one", async () => {
+  it("puts a tenant_id column on every registered tenant table, and only sessions besides", async () => {
     const withTenantId = await owner<{ table_name: string }[]>`
       select table_name from information_schema.columns
       where table_schema = 'public' and column_name = 'tenant_id' and is_nullable = 'NO'`;
+    // sessions.tenant_id binds a session to its host; app_user cannot read sessions at all.
     expect(withTenantId.map((r) => r.table_name).sort()).toEqual(
-      TENANT_TABLES.map((t) => t.table).sort(),
+      [...TENANT_TABLES.map((t) => t.table), "sessions"].sort(),
     );
   });
 
   it("enables and forces RLS, with a policy, on every tenant table and on tenants", async () => {
-    const names = [...TENANT_TABLES.map((t) => t.table), "tenants"];
+    const names = [...TENANT_TABLES.map((t) => t.table), "tenants", ...IDENTITY_TABLES];
     const flags = await owner<
       { relname: string; rls: boolean; forced: boolean; policies: number }[]
     >`
@@ -156,7 +167,9 @@ describe.each(TENANT_TABLES)("isolation: $table", (fixture) => {
 
   it("3. cannot update or delete the other tenant's rows", async () => {
     await affectsNothing(() =>
-      asA((tx) => tx.execute(sql`update ${table} set deleted_at = now() where tenant_id = ${B}`)),
+      asA((tx) =>
+        tx.execute(sql`update ${table} set tenant_id = tenant_id where tenant_id = ${B}`),
+      ),
     );
     await affectsNothing(() =>
       asA((tx) => tx.execute(sql`delete from ${table} where tenant_id = ${B}`)),
@@ -164,7 +177,7 @@ describe.each(TENANT_TABLES)("isolation: $table", (fixture) => {
     const [check] = await owner.begin(async (tx) => {
       await tx`select set_config('app.tenant_id', ${B}, true)`;
       return tx`select count(*)::int as n from ${tx(fixture.table)}
-        where tenant_id = ${B} and deleted_at is null`;
+        where tenant_id = ${B}`;
     });
     expect(check?.n).toBe(1);
   });

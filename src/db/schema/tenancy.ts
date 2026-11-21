@@ -9,6 +9,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import { REGISTRATION_MODES } from "./identity";
 
 /**
  * Drizzle mirror of src/db/migrations/0002_tenancy.sql. The SQL migration is the source of truth
@@ -90,6 +91,10 @@ export const tenantSettings = pgTable(
     timeZone: text("time_zone").notNull(),
     placeholderBranding: boolean("placeholder_branding").notNull(),
     activeThemeId: uuid("active_theme_id"),
+    registrationMode: text("registration_mode", { enum: REGISTRATION_MODES }).notNull(),
+    allowedEmailDomains: text("allowed_email_domains").array().notNull(),
+    requireAdmin2fa: boolean("require_admin_2fa").notNull(),
+    sessionHours: integer("session_hours").notNull(),
     ...audit,
   },
   (t) => [primaryKey({ columns: [t.tenantId, t.id] })],
