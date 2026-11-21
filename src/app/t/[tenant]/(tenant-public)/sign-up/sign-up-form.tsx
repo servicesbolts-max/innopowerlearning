@@ -19,6 +19,7 @@ export function SignUpForm({ org, initialEmail = "" }: { org: string; initialEma
   const ready = useIsClient();
   const errorMessage = useAuthErrorMessage(org);
   const [error, setError] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -29,14 +30,23 @@ export function SignUpForm({ org, initialEmail = "" }: { org: string; initialEma
     const password = String(data.get("password") ?? "");
     setPending(true);
     setError(null);
-    const res = await authClient.signUp.email({ name, email, password });
+    const res = await authClient.signUp.email({ name, email, password, callbackURL: safeNext() });
     setPending(false);
     if (res.error) {
       setError(errorMessage(authErrorCode(res.error)));
       return;
     }
+    // Verification is required: no session yet, the email carries the link that signs them in.
+    if (!(res.data as { token?: string | null } | null)?.token) {
+      setSentTo(email);
+      return;
+    }
     window.location.assign(safeNext());
   };
+
+  if (sentTo) {
+    return <Banner tone="success" title={t("signUp.checkEmail", { email: sentTo })} />;
+  }
 
   return (
     <div className="flex flex-col gap-6">

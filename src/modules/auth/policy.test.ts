@@ -25,6 +25,8 @@ describe("methodForPath", () => {
     ["/magic-link/verify", "magic-link"],
     ["/callback/google", "oauth"],
     ["/passkey/verify-authentication", "passkey"],
+    ["/sign-in/social", "oauth"],
+    ["/verify-email", "password"],
     [undefined, "other"],
   ])("%s → %s", (path, method) => expect(methodForPath(path)).toBe(method));
 });
@@ -108,6 +110,18 @@ describe("admins must use a second factor", () => {
         reason: "method_not_allowed_for_admins",
       });
     }
+  });
+
+  it("refuses unknown sign-in paths for admins and platform staff", () => {
+    expect(decideAdmission(base({ method: "other", membership: admin }))).toEqual({
+      allow: false,
+      reason: "method_not_allowed_for_admins",
+    });
+    expect(
+      decideAdmission(
+        base({ method: "other", user: { email: "o@x.test", platformRole: "platform_owner" } }),
+      ),
+    ).toEqual({ allow: false, reason: "method_not_allowed_for_admins" });
   });
 
   it("allows password (then TOTP) and passkeys for admin roles", () => {

@@ -5,14 +5,15 @@ import { auth } from "@/modules/auth";
  * attached the tenant (x-tenant-id) or refused the request. The auth instance is created on the
  * first request, so builds need no database or auth secrets.
  */
-const MAGIC_LINK_VERIFY = "/api/auth/magic-link/verify";
+/** Links opened from email: a refusal must land on the sign-in page, never on raw JSON. */
+const EMAIL_LINKS = new Set(["/api/auth/magic-link/verify", "/api/auth/verify-email"]);
 
 async function handle(request: Request): Promise<Response> {
   const response = await auth().handler(request);
   const url = new URL(request.url);
   // A magic link is opened in the browser: a refusal (admission policy, expired or used token)
   // must land on the sign-in page with a stable code, never on a raw JSON error.
-  if (url.pathname === MAGIC_LINK_VERIFY && response.status >= 400) {
+  if (EMAIL_LINKS.has(url.pathname) && response.status >= 400) {
     const body = (await response.json().catch(() => null)) as { code?: string } | null;
     const code = body?.code && /^[A-Za-z_]{1,64}$/.test(body.code) ? body.code : "generic";
     return new Response(null, {

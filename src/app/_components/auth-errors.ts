@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback } from "react";
+import { sanitizeNext } from "@/lib/safe-next";
 
 /** Turns a Better Auth or admission error code into a translated sentence. */
 export function useAuthErrorMessage(org: string) {
@@ -15,11 +16,9 @@ export function useAuthErrorMessage(org: string) {
   );
 }
 
-/** A same-site path to continue to after signing in (never another host). */
+/** A same-origin path to continue to after signing in (never another host). */
 export function safeNext(fallback = "/"): string {
   if (typeof window === "undefined") return fallback;
   const next = new URLSearchParams(window.location.search).get("next");
-  return next && next.startsWith("/") && !next.startsWith("//") && !next.includes("\\")
-    ? next
-    : fallback;
+  return sanitizeNext(next, window.location.origin, fallback);
 }

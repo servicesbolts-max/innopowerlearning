@@ -18,8 +18,9 @@ import { env, siteEnv } from "@/lib/env";
 import { uuidv7 } from "@/lib/ids";
 import { admitSession, AdmissionDenied } from "./admission";
 import { authDb } from "./db";
-import { sendMagicLinkEmail } from "./emails";
-import { impersonation } from "./impersonation";
+import { sendMagicLinkEmail, sendVerificationEmail } from "./emails";
+import { auditSecurityChange, stripUnverifiedPassword } from "./hardening";
+import { impersonation, impersonationGuard } from "./impersonation";
 import { passkeyOrigins, rememberPasskeyOrigin } from "./passkey-origins";
 import { hashPassword, verifyPassword } from "./password";
 
@@ -63,7 +64,12 @@ function createAuth() {
       protocol: e.APP_ENV === "development" ? "http" : "https",
     },
     // Same-origin only: a tenant's pages may call its own auth API, never another tenant's.
-    trustedOrigins: (request) => (request ? [new URL(request.url).origin] : []),
+    // Built from the Host header and the deployment's scheme, so a TLS-terminating proxy (which
+    // may hand the app an http:// URL) still matches the browser's https:// Origin.
+    trustedOrigins: (request) => {
+      const host = request?.headers.get("host");
+      return host ? [`${e.APP_ENV === "development" ? "http" : "https"}://${host}`] : [];
+    },
     database: drizzleAdapter(authDb(), {
       provider: "pg",
       schema: {
@@ -79,11 +85,13 @@ function createAuth() {
     advanced: {
       cookiePrefix: "il",
       database: { generateId: () => uuidv7() },
-      ipAddress: { ipAddressHeaders: [e.AUTH_IP_HEADER] },
+      ipAddress: { ipAddressHeaders: [e.AUTH_IP_HEADER ?? "x-forwarded-for"] },
     },
     user: {
       additionalFields: {
         platformRole: { type: "string", required: false, input: false },
+        // Read by the admission hook: soft-deleted people never get a session.
+        deletedAt: { type: "date", required: false, input: false },
       },
     },
     session: {
@@ -103,6 +111,15 @@ function createAuth() {
       maxPasswordLength: 128,
       autoSignIn: true,
       password: { hash: hashPassword, verify: verifyPassword },
+      // A password sign-up proves nothing about the address: no session until it is confirmed.
+      // Otherwise email-domain tenants and invitations could be joined with someone else's email.
+      requireEmailVerification: true,
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+      expiresIn: 60 * 60 * 24,
+      sendVerificationEmail,
     },
     socialProviders,
     rateLimit: {
@@ -120,13 +137,18 @@ function createAuth() {
       },
     },
     hooks: {
+      // An impersonation session may only read itself, sign out or stop (impersonation.ts).
       // Each passkey ceremony may come from any accepted host (see passkey-origins.ts).
       before: createAuthMiddleware(async (ctx) => {
+        await impersonationGuard(ctx);
+        await stripUnverifiedPassword(ctx);
         if (ctx.path.startsWith("/passkey/")) {
           const host = ctx.headers?.get("host") ?? ctx.request?.headers.get("host") ?? null;
           rememberPasskeyOrigin(host, e.APP_ENV === "development" ? "http" : "https");
         }
       }),
+      // Security changes made through Better Auth's own endpoints are audited too.
+      after: createAuthMiddleware(async (ctx) => auditSecurityChange(ctx)),
     },
     databaseHooks: {
       user: {

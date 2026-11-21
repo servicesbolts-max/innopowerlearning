@@ -2,7 +2,7 @@
 
 import NextLink from "next/link";
 import { useSelectedLayoutSegments } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { Avatar, Banner, Button, cx } from "@/design-system";
 import { authClient } from "@/lib/auth-client";
 
@@ -50,6 +50,7 @@ export function AccountNav() {
 /** Persistent banner while a platform owner views as this user (Section 6.3). */
 export function ImpersonationBanner() {
   const t = useTranslations("auth.impersonation");
+  const format = useFormatter();
   const { data } = authClient.useSession();
   const session = data?.session as
     { impersonatedBy?: string | null; impersonationExpiresAt?: string | Date | null } | undefined;
@@ -65,9 +66,7 @@ export function ImpersonationBanner() {
         tone="warning"
         title={t("banner", {
           name: data.user.name,
-          time: ends
-            ? ends.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
-            : "",
+          time: ends ? format.dateTime(ends, { timeStyle: "short" }) : "",
         })}
         action={
           <Button size="small" variant="gray" onPress={stop}>

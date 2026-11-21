@@ -72,7 +72,10 @@ describe("decideRoute: hub host", () => {
 
   it("serves the /t/<slug> fallback only when enabled, and only for active tenants", async () => {
     expect(await route("localhost:3000", "/t/lsetf")).toEqual({ type: "not-found" });
-    expect(await route("localhost:3000", "/t/lsetf/courses", true)).toEqual({ type: "next" });
+    expect(await route("localhost:3000", "/t/lsetf/courses", true)).toEqual({
+      type: "next",
+      tenant: LSETF,
+    });
     expect(await route("localhost:3000", "/t/paused", true)).toEqual({ type: "not-found" });
     expect(await route("localhost:3000", "/t/hub", true)).toEqual({ type: "not-found" });
     expect(await route("localhost:3000", "/t", true)).toEqual({ type: "not-found" });

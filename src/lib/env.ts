@@ -45,7 +45,7 @@ export const serverEnvSchema = z.object({
    * the app, e.g. cf-connecting-ip or x-real-ip. Used for auth rate limits. Clients can forge any
    * header the edge does not overwrite.
    */
-  AUTH_IP_HEADER: z.string().min(1).default("x-forwarded-for"),
+  AUTH_IP_HEADER: z.string().min(1).optional(),
   /** Have I Been Pwned password check: "auto" = on in staging and production. */
   PASSWORD_BREACH_CHECK: z.enum(["auto", "true", "false"]).default("auto"),
   GOOGLE_CLIENT_ID: z.string().optional(),
@@ -77,6 +77,11 @@ export function parseEnv(source: Record<string, string | undefined>): ServerEnv 
   const deployed = source.APP_ENV === "staging" || source.APP_ENV === "production";
   if (deployed && !source.BETTER_AUTH_SECRET) {
     throw new EnvValidationError([`BETTER_AUTH_SECRET: required when APP_ENV=${source.APP_ENV}`]);
+  }
+  // Rate limits key on the client IP: a deployment must name the header its edge overwrites,
+  // or clients choose their own IP (spoofable) or share one bucket (appended proxies).
+  if (deployed && !source.AUTH_IP_HEADER) {
+    throw new EnvValidationError([`AUTH_IP_HEADER: required when APP_ENV=${source.APP_ENV}`]);
   }
   const result = serverEnvSchema.safeParse(source);
   if (!result.success) {

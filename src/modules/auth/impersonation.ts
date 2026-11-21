@@ -1,5 +1,10 @@
 import type { BetterAuthPlugin } from "better-auth";
-import { APIError, createAuthEndpoint, sessionMiddleware } from "better-auth/api";
+import {
+  APIError,
+  createAuthEndpoint,
+  getSessionFromCtx,
+  sessionMiddleware,
+} from "better-auth/api";
 import { deleteSessionCookie, setSessionCookie } from "better-auth/cookies";
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
@@ -7,6 +12,7 @@ import { memberships, type PlatformRole } from "@/db/schema";
 import { audit } from "@/modules/audit";
 import { can } from "@/modules/rbac";
 import { withTenant } from "@/modules/tenancy";
+import { requestTenantId } from "./admission";
 
 /**
  * "View as" (Section 6.3): a platform owner (or staff granted it) opens a session as a member of
@@ -15,6 +21,46 @@ import { withTenant } from "@/modules/tenancy";
  * audited in the tenant. The Console UI to start it arrives in P11b.
  */
 export const ADMIN_SESSION_COOKIE = "il.admin_session";
+
+/**
+ * Better Auth endpoints an impersonation session may call. Everything else (adding a passkey,
+ * changing the profile, listing or revoking the user's sessions, enabling 2FA, signing in again)
+ * would act on the real account beyond the time-limited, tenant-scoped "view as".
+ */
+const ALLOWED_WHILE_IMPERSONATING = new Set(["/get-session", "/sign-out", "/impersonation/stop"]);
+
+type GuardContext = {
+  path: string;
+  headers?: Headers | undefined;
+  request?: Request | undefined;
+};
+
+/**
+ * Runs before every Better Auth endpoint (src/modules/auth/auth.ts). An impersonation session is
+ * refused on any endpoint outside the allow-list, and on every endpoint once its deadline has
+ * passed (Better Auth extends expires_at on use, so the deadline is the authority).
+ */
+export async function impersonationGuard(ctx: GuardContext): Promise<void> {
+  const cookie = ctx.headers?.get("cookie") ?? ctx.request?.headers.get("cookie") ?? "";
+  if (!cookie.includes("session_token")) return;
+  const found = await getSessionFromCtx(ctx as Parameters<typeof getSessionFromCtx>[0]);
+  const fields = found?.session as
+    (SessionFields & { impersonationExpiresAt?: Date | string | null }) | undefined;
+  if (!fields?.impersonatedBy) return;
+  const deadline = fields.impersonationExpiresAt ? new Date(fields.impersonationExpiresAt) : null;
+  if (!deadline || deadline <= new Date()) {
+    throw new APIError("UNAUTHORIZED", {
+      message: "impersonation_expired",
+      code: "impersonation_expired",
+    });
+  }
+  if (!ALLOWED_WHILE_IMPERSONATING.has(ctx.path)) {
+    throw new APIError("FORBIDDEN", {
+      message: "blocked_while_impersonating",
+      code: "blocked_while_impersonating",
+    });
+  }
+}
 export const MAX_IMPERSONATION_MINUTES = 60;
 
 const startBody = z.object({
@@ -52,6 +98,24 @@ export function impersonation() {
           if (!can(actor, "platform.impersonate")) {
             throw new APIError("FORBIDDEN", { message: "forbidden" });
           }
+          const hostTenant = await requestTenantId(
+            (name) => ctx.headers?.get(name) ?? ctx.request?.headers.get(name) ?? null,
+          );
+          if (fields.tenantId !== hostTenant) {
+            throw new APIError("FORBIDDEN", { message: "wrong_tenant" });
+          }
+          const hasTotp = !!(current.user as { twoFactorEnabled?: boolean | null })
+            .twoFactorEnabled;
+          const passkeys = hasTotp
+            ? []
+            : await ctx.context.adapter.findMany({
+                model: "passkey",
+                where: [{ field: "userId", value: current.user.id }],
+                limit: 1,
+              });
+          if (!hasTotp && passkeys.length === 0) {
+            throw new APIError("FORBIDDEN", { message: "second_factor_required" });
+          }
           const { userId, reason, minutes } = ctx.body;
           if (userId === current.user.id) throw new APIError("BAD_REQUEST", { message: "self" });
 
@@ -72,6 +136,17 @@ export function impersonation() {
           }
 
           const deadline = new Date(Date.now() + minutes * 60_000);
+          // Audited first: if the entry cannot be written, no impersonation session exists. The
+          // free-text reason stays on the session row (it may name people), not in the audit log.
+          await audit(
+            { tenantId: fields.tenantId },
+            {
+              action: "impersonation.started",
+              actorUserId: current.user.id,
+              target: { type: "user", id: userId },
+              metadata: { minutes },
+            },
+          );
           const session = await ctx.context.internalAdapter.createSession(userId, true, {
             tenantId: fields.tenantId,
             impersonatedBy: current.user.id,
@@ -92,15 +167,6 @@ export function impersonation() {
             },
           );
           await setSessionCookie(ctx, { session, user: target }, true);
-          await audit(
-            { tenantId: fields.tenantId },
-            {
-              action: "impersonation.started",
-              actorUserId: current.user.id,
-              target: { type: "user", id: userId },
-              metadata: { minutes, reason: reason.slice(0, 200) },
-            },
-          );
           return ctx.json({ ok: true, expiresAt: deadline.toISOString() });
         },
       ),

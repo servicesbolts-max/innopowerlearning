@@ -59,6 +59,12 @@ async function freshTotp(secret: string, after?: string): Promise<string> {
   return code;
 }
 
+/** Opens the link in the latest email to this address (Mailpit). */
+async function openEmailLink(page: Page, to: string) {
+  const link = (await latestEmailText(to)).match(/https?:\/\/\S+/)![0];
+  await page.goto(link);
+}
+
 async function latestEmailText(to: string): Promise<string> {
   for (let i = 0; i < 20; i++) {
     const res = await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${to}"`)}`);
@@ -152,9 +158,13 @@ test.describe("sign-up and registration modes", () => {
     await page.goto(at(host, "/sign-up"));
     await expectNoAxeViolations(page);
     await page.getByLabel("Full name").fill("New Learner");
-    await page.getByLabel("Email").fill(`new-${info.project.name}-${all().runId}@e2e.test`);
+    const address = `new-${info.project.name}-${all().runId}@e2e.test`;
+    await page.getByLabel("Email").fill(address);
     await page.getByLabel("Password").fill(`Pw-${Date.now()}-long`);
     await page.getByRole("button", { name: "Create account" }).click();
+    // No session until the address is confirmed.
+    await expect(page.getByText("Check your email")).toBeVisible({ timeout: 15_000 });
+    await openEmailLink(page, address);
     await expectSignedIn(page, "New Learner");
     await page.goto(at(host, "/sign-in"));
     await expectNoAxeViolations(page);
@@ -165,9 +175,14 @@ test.describe("sign-up and registration modes", () => {
     await page.goto(at(host, "/sign-up"));
     await expect(page.getByText("is invite-only")).toBeVisible();
     await page.getByLabel("Full name").fill("Uninvited");
-    await page.getByLabel("Email").fill(`uninvited-${info.project.name}-${all().runId}@e2e.test`);
+    const address = `uninvited-${info.project.name}-${all().runId}@e2e.test`;
+    await page.getByLabel("Email").fill(address);
     await page.getByLabel("Password").fill(`Pw-${Date.now()}-long`);
     await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page.getByText("Check your email")).toBeVisible({ timeout: 15_000 });
+    // Confirming the address still does not get past the invite-only rule.
+    await openEmailLink(page, address);
+    await expect(page).toHaveURL(/\/sign-in\?error=invite_required/);
     await expect(page.getByRole("alert").filter({ hasText: "is invite-only" })).toBeVisible();
   });
 
@@ -186,6 +201,9 @@ test.describe("sign-up and registration modes", () => {
     await page.getByLabel("Full name").fill("Invited Instructor");
     await page.getByLabel("Password").fill(`Pw-${Date.now()}-long`);
     await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page.getByText("Check your email")).toBeVisible({ timeout: 15_000 });
+    // The invitation cookie is in this browser, so confirming signs the instructor in.
+    await openEmailLink(page, invite.email);
     await expectSignedIn(page, "Invited Instructor");
 
     // The invitation is single-use.

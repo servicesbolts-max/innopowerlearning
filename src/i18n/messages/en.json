@@ -393,6 +393,13 @@
       "body": "You have been invited to join {org} on {product}. The invitation expires in {days} days.",
       "action": "Accept the invitation",
       "footer": "If you were not expecting this invitation, you can ignore this email."
+    },
+    "verify": {
+      "subject": "Confirm your email for {org}",
+      "heading": "Confirm your email",
+      "body": "Confirm this address to finish creating your account. The link expires in 24 hours.",
+      "action": "Confirm email address",
+      "footer": "If you did not create an account, you can ignore this email."
     }
   },
   "auth": {
@@ -420,7 +427,9 @@
       "submit": "Verify",
       "useBackup": "Use a backup code instead",
       "backupCode": "Backup code",
-      "trustDevice": "Trust this device for 30 days"
+      "trustDevice": "Trust this device for 30 days",
+      "backupHelp": "Enter one of the backup codes you saved when you turned on two-step verification.",
+      "useTotp": "Use your authenticator app instead"
     },
     "signUp": {
       "title": "Create an account",
@@ -430,7 +439,8 @@
       "inviteOnly": "{org} is invite-only. Use the link in your invitation email to join.",
       "domain": "Use an email address from: {domains}.",
       "application": "New accounts at {org} are reviewed before you can sign in.",
-      "passwordHelp": "At least 10 characters."
+      "passwordHelp": "At least 10 characters.",
+      "checkEmail": "Check your email. We sent a link to {email} to confirm your address and finish signing up."
     },
     "invite": {
       "title": "Invitation",
@@ -452,7 +462,7 @@
       "confirmPassword": "Confirm your password to continue",
       "scan": "Scan this QR code with your authenticator app, or enter the key below.",
       "qrAlt": "QR code for your authenticator app",
-      "manualKey": "Setup key",
+      "manualKey": "Setup key: <key>{secret}</key>",
       "verify": "Confirm and turn on",
       "backupHeading": "Your backup codes",
       "backupHelp": "Each code works once if you lose your phone. Store them somewhere safe; they will not be shown again.",
@@ -464,7 +474,15 @@
       "addPasskey": "Add a passkey",
       "passkeyAdded": "Passkey added.",
       "removePasskey": "Remove",
-      "signOut": "Sign out"
+      "signOut": "Sign out",
+      "removePasskeyNamed": "Remove {name}",
+      "removeConfirmTitle": "Remove this passkey?",
+      "removeConfirmBody": "{name} will no longer sign you in.",
+      "removeConfirm": "Remove passkey",
+      "copyCodes": "Copy codes",
+      "codesCopied": "Backup codes copied.",
+      "deviceSingle": "Passkey on one device",
+      "deviceMulti": "Synced passkey"
     },
     "admin": {
       "title": "Admin",
@@ -496,7 +514,12 @@
       "method_not_allowed_for_admins": "Admins sign in with a password and verification code, or a passkey.",
       "not_a_platform_user": "Sign in on your organization site.",
       "generic": "Something went wrong. Try again.",
-      "INVALID_EMAIL": "Enter your email address first."
+      "INVALID_EMAIL": "Enter your email address first.",
+      "blocked_while_impersonating": "Not available while viewing as another person.",
+      "impersonation_expired": "Viewing as another person has ended. Sign in again.",
+      "INVALID_TOKEN": "This sign-in link has expired or was already used. Request a new one.",
+      "EXPIRED_TOKEN": "This sign-in link has expired or was already used. Request a new one.",
+      "EMAIL_NOT_VERIFIED": "Confirm your email address first. We sent you a link when you signed up."
     }
   },
   "roles": {

@@ -19,8 +19,13 @@ describe("parseEnv", () => {
     expect(() => parseEnv({ ...valid, NODE_ENV: "production" })).toThrow(/APP_ENV/);
     const secret = "s".repeat(32);
     expect(
-      parseEnv({ ...valid, NODE_ENV: "production", APP_ENV: "staging", BETTER_AUTH_SECRET: secret })
-        .APP_ENV,
+      parseEnv({
+        ...valid,
+        NODE_ENV: "production",
+        APP_ENV: "staging",
+        BETTER_AUTH_SECRET: secret,
+        AUTH_IP_HEADER: "cf-connecting-ip",
+      }).APP_ENV,
     ).toBe("staging");
   });
 
@@ -38,8 +43,20 @@ describe("parseEnv", () => {
     expect(() => parseEnv({ ...valid, APP_ENV: "staging" })).toThrow(/BETTER_AUTH_SECRET/);
     expect(parseEnv({ ...valid, APP_ENV: "development" }).BETTER_AUTH_SECRET).toBeUndefined();
     expect(() =>
-      parseEnv({ ...valid, APP_ENV: "production", BETTER_AUTH_SECRET: "too-short" }),
+      parseEnv({
+        ...valid,
+        APP_ENV: "production",
+        BETTER_AUTH_SECRET: "too-short",
+        AUTH_IP_HEADER: "x-real-ip",
+      }),
     ).toThrow(/32 characters/);
+  });
+
+  it("requires AUTH_IP_HEADER on staging and production", () => {
+    const secret = "s".repeat(32);
+    expect(() => parseEnv({ ...valid, APP_ENV: "production", BETTER_AUTH_SECRET: secret })).toThrow(
+      /AUTH_IP_HEADER/,
+    );
   });
 
   it("fails fast when DATABASE_URL is missing", () => {

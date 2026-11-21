@@ -15,7 +15,7 @@ import { isPartnerSlug } from "./slugs";
  *   decided here before rendering, so it is a real 404 and never a streamed 200.
  */
 export type RouteDecision =
-  | { type: "next" }
+  | { type: "next"; tenant?: ResolvedTenant }
   | { type: "rewrite"; pathname: string; tenant: ResolvedTenant }
   /** A tenant-host API request: served by the root route handler, with the tenant attached. */
   | { type: "api"; tenant: ResolvedTenant }
@@ -77,7 +77,8 @@ export async function decideRoute(
         const slug = pathname.split("/")[2] ?? "";
         if (!isPartnerSlug(slug)) return NOT_FOUND;
         const tenant = await resolve({ surface: "tenant", by: "slug", slug });
-        return tenant?.status === "active" ? NEXT : NOT_FOUND;
+        // Same trusted tenant headers as a tenant host, so actions and pages agree.
+        return tenant?.status === "active" ? { type: "next", tenant } : NOT_FOUND;
       }
       return NEXT;
     }

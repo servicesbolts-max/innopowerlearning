@@ -35,6 +35,25 @@ export async function sendMagicLinkEmail(
   });
 }
 
+/** Better Auth's email-verification callback (sent on password sign-up). */
+export async function sendVerificationEmail(
+  data: { user: { email: string }; url: string },
+  request?: Request,
+): Promise<void> {
+  const org = await orgName(request?.headers.get(TENANT_ID_HEADER) ?? null);
+  await sendMail({
+    to: data.user.email,
+    subject: t("verify.subject", { org }),
+    ...actionEmail({
+      heading: t("verify.heading", { org }),
+      body: t("verify.body"),
+      action: t("verify.action"),
+      url: data.url,
+      footer: t("verify.footer"),
+    }),
+  });
+}
+
 export async function sendInvitationEmail(input: {
   email: string;
   tenantId: string;

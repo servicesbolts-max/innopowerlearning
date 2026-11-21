@@ -116,10 +116,14 @@ export function SignInForm({ org, ssoOnly, providers, initialError }: FormProps)
       <form method="post" onSubmit={onCode} className="flex flex-col gap-4" noValidate>
         <div className="flex flex-col gap-1">
           <h2 className="text-headline">{t("twoFactor.heading")}</h2>
-          <p className="text-subheadline text-label-secondary">{t("twoFactor.help", { org })}</p>
+          <p className="text-subheadline text-label-secondary">
+            {step === "totp" ? t("twoFactor.help", { org }) : t("twoFactor.backupHelp")}
+          </p>
         </div>
         {feedback}
         <TextField
+          // A new field per step, so focus moves to it when the step changes (WCAG 2.4.3).
+          key={step}
           isDisabled={!ready}
           label={step === "totp" ? t("twoFactor.code") : t("twoFactor.backupCode")}
           name="code"
@@ -131,11 +135,9 @@ export function SignInForm({ org, ssoOnly, providers, initialError }: FormProps)
         <Button type="submit" isPending={pending} isDisabled={!ready} fullWidth>
           {t("twoFactor.submit")}
         </Button>
-        {step === "totp" && (
-          <Button variant="plain" onPress={() => setStep("backup")}>
-            {t("twoFactor.useBackup")}
-          </Button>
-        )}
+        <Button variant="plain" onPress={() => setStep(step === "totp" ? "backup" : "totp")}>
+          {step === "totp" ? t("twoFactor.useBackup") : t("twoFactor.useTotp")}
+        </Button>
       </form>
     );
   }

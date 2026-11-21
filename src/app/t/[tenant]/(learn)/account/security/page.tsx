@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
+import { Skeleton, SkeletonText } from "@/design-system";
 import { getTenantSession } from "@/modules/auth";
 import type { TenantShell } from "@/modules/tenancy";
 import { AuthCard } from "../../../../../_components/auth-card";
@@ -38,7 +39,15 @@ export default async function SecurityPage({ params }: Props) {
   const t = await getTranslations("auth.security");
   return (
     <AuthCard heading={t("title")}>
-      <Suspense>
+      <Suspense
+        fallback={
+          <div className="flex flex-col gap-4">
+            <SkeletonText lines={1} />
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-40 w-full" />
+          </div>
+        }
+      >
         <Security shell={shell} />
       </Suspense>
     </AuthCard>

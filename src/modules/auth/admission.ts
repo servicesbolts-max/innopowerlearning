@@ -107,6 +107,14 @@ export async function admitSession(
       .from(tenants)
       .where(eq(tenants.id, tenantId));
     if (!tenant || tenant.status !== "active" || tenant.deletedAt) {
+      // Refusals are audited like every other one (when the tenant row still exists).
+      if (tenant) {
+        await recordAudit(tx, tenantId, {
+          action: "auth.session.denied",
+          actorUserId: session.userId,
+          metadata: { method, reason: "tenant_inactive" },
+        });
+      }
       return { allow: false as const, reason: "membership_suspended" as const };
     }
     const [settings] = await tx

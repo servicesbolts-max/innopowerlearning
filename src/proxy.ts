@@ -47,6 +47,10 @@ export async function proxy(request: NextRequest) {
 
   switch (decision.type) {
     case "next":
+      if (decision.tenant) {
+        headers.set(TENANT_ID_HEADER, decision.tenant.id);
+        headers.set(TENANT_SLUG_HEADER, decision.tenant.slug);
+      }
       return NextResponse.next({ request: { headers } });
     case "api": {
       // Set after stripping, so the values can only come from host resolution.

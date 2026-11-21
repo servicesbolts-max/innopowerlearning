@@ -42,10 +42,18 @@ export type Admission =
 export function methodForPath(path: string | undefined): SignInMethod {
   if (!path) return "other";
   if (path.startsWith("/sign-in/email") || path.startsWith("/sign-up/email")) return "password";
+  // Confirming the email after a password sign-up completes that sign-up.
+  if (path.startsWith("/verify-email")) return "password";
   // A TOTP or backup-code verification completes a password sign-in.
   if (path.startsWith("/two-factor/")) return "password";
   if (path.startsWith("/magic-link")) return "magic-link";
-  if (path.startsWith("/callback/") || path.startsWith("/oauth2/callback")) return "oauth";
+  if (
+    path.startsWith("/callback/") ||
+    path.startsWith("/oauth2/callback") ||
+    path.startsWith("/sign-in/social")
+  ) {
+    return "oauth";
+  }
   if (path.startsWith("/passkey/")) return "passkey";
   return "other";
 }
@@ -57,13 +65,13 @@ export function emailDomain(email: string): string {
 function methodAllowed(input: AdmissionInput, role: TenantRole | null): DenyReason | null {
   const { method, tenant, user } = input;
   if (user.platformRole) {
-    // Platform staff hold every tenant's data: always a second factor.
-    return method === "magic-link" || method === "oauth" ? "method_not_allowed_for_admins" : null;
+    // Platform staff hold every tenant's data: always a second factor, never an unknown path.
+    return method === "password" || method === "passkey" ? null : "method_not_allowed_for_admins";
   }
   if (tenant.registrationMode === "sso_only" && method !== "oauth") return "sso_required";
   const admin = role !== null && requiresSecondFactor({ role, platformRole: null });
   if (admin && tenant.requireAdmin2fa) {
-    if (method === "magic-link") return "method_not_allowed_for_admins";
+    if (method === "magic-link" || method === "other") return "method_not_allowed_for_admins";
     if (method === "oauth" && tenant.registrationMode !== "sso_only") {
       return "method_not_allowed_for_admins";
     }
