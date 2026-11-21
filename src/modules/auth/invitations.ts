@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { invitations, type TenantRole } from "@/db/schema";
 import { uuidv7 } from "@/lib/ids";
-import type { TenantTx } from "@/modules/tenancy";
+import { withTenant, type TenantTx } from "@/modules/tenancy";
 
 /**
  * Invitations (Section 3: invite-only tenants; Section 6.1). The raw token only ever travels in
@@ -39,7 +39,12 @@ export async function createInvitation(
 export async function findOpenInvitation(tx: TenantTx, token: string) {
   if (!/^[A-Za-z0-9_-]{20,100}$/.test(token)) return null;
   const [row] = await tx
-    .select({ id: invitations.id, email: invitations.email, role: invitations.role })
+    .select({
+      id: invitations.id,
+      email: invitations.email,
+      role: invitations.role,
+      expiresAt: invitations.expiresAt,
+    })
     .from(invitations)
     .where(
       and(
@@ -50,6 +55,11 @@ export async function findOpenInvitation(tx: TenantTx, token: string) {
       ),
     );
   return row ?? null;
+}
+
+/** The open invitation for a token in this tenant, for the invitation page. */
+export function getOpenInvitation(tenantId: string, token: string) {
+  return withTenant({ tenantId }, (tx) => findOpenInvitation(tx, token));
 }
 
 /** Reads one cookie from a Cookie header without trusting anything else in it. */

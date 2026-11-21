@@ -6,6 +6,7 @@ import { ToastProvider, ToastRegion } from "@/design-system";
 import { PRODUCT_NAME } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import { listPublicPartners } from "@/modules/tenancy";
+import { AccountNav, ImpersonationBanner } from "../../_components/account-nav";
 import { ShellFrame, SiteFooter, SiteHeader } from "../../_components/shell";
 import { getTenantShell } from "../../_lib/tenancy";
 
@@ -76,9 +77,10 @@ export default async function TenantLayout({
               items={[
                 { href: "/courses", label: t("nav.courses"), segment: "courses" },
                 { href: "/programs", label: t("nav.programs"), segment: "programs" },
-                { href: "/sign-in", label: t("nav.signIn"), segment: "sign-in", emphasis: true },
               ]}
+              account={<AccountNav />}
             />
+            <ImpersonationBanner />
             <main id="main" tabIndex={-1} className="flex-1 outline-none">
               {children}
             </main>

@@ -1,5 +1,5 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { memberships, tenants, tenantSettings, users } from "@/db/schema";
+import { memberships, tenants, tenantSettings, users, type PlatformRole } from "@/db/schema";
 import { uuidv7 } from "@/lib/ids";
 import { recordAudit } from "@/modules/audit";
 import { TENANT_ID_HEADER, withTenant } from "@/modules/tenancy";
@@ -20,6 +20,12 @@ interface RequestLike {
   headers?: Headers | undefined;
   request?: Request | undefined;
   path?: string | undefined;
+  /** Better Auth's context: its adapter reuses the request's own connection. */
+  context?: {
+    internalAdapter?: {
+      findUserById(id: string): Promise<Record<string, unknown> | null>;
+    };
+  };
 }
 
 function header(ctx: RequestLike | null, name: string): string | null {
@@ -27,13 +33,23 @@ function header(ctx: RequestLike | null, name: string): string | null {
 }
 
 /** The platform tenant (Hub and Console): the only tenant with kind = 'platform'. */
-export async function platformTenantId(): Promise<string> {
-  const [row] = await authDb()
-    .select({ id: tenants.id })
-    .from(tenants)
-    .where(and(eq(tenants.kind, "platform"), isNull(tenants.deletedAt)));
-  if (!row) throw new Error("No platform tenant: run pnpm db:seed");
-  return row.id;
+let platformId: Promise<string> | undefined;
+
+/** The platform tenant (Hub and Console): the only tenant with kind = 'platform'. Fixed for the
+ * life of the process, so it is read once (and never inside a Better Auth request). */
+export function platformTenantId(): Promise<string> {
+  platformId ??= (async () => {
+    const [row] = await authDb()
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(and(eq(tenants.kind, "platform"), isNull(tenants.deletedAt)));
+    if (!row) {
+      platformId = undefined;
+      throw new Error("No platform tenant: run pnpm db:seed");
+    }
+    return row.id;
+  })();
+  return platformId;
 }
 
 /**
@@ -62,10 +78,24 @@ export async function admitSession(
     return { tenantId: session.tenantId };
   }
 
-  const [user] = await authDb()
-    .select({ email: users.email, platformRole: users.platformRole, deletedAt: users.deletedAt })
-    .from(users)
-    .where(eq(users.id, session.userId));
+  // Read through Better Auth's adapter, never a second app_auth connection: a hook that waits for
+  // another pooled connection while the request holds one can deadlock under load.
+  const found = ctx?.context?.internalAdapter
+    ? await ctx.context.internalAdapter.findUserById(session.userId)
+    : (
+        await authDb()
+          .select({
+            email: users.email,
+            platformRole: users.platformRole,
+            deletedAt: users.deletedAt,
+          })
+          .from(users)
+          .where(eq(users.id, session.userId))
+      )[0];
+  const user = found as
+    | { email: string; platformRole?: PlatformRole | null; deletedAt?: Date | null }
+    | null
+    | undefined;
   if (!user || user.deletedAt) throw new AdmissionDenied("membership_suspended");
 
   const method = methodForPath(ctx?.path);
@@ -103,7 +133,7 @@ export async function admitSession(
         allowedEmailDomains: settings?.allowedEmailDomains ?? [],
         requireAdmin2fa: settings?.requireAdmin2fa ?? true,
       },
-      user: { email: user.email, platformRole: user.platformRole },
+      user: { email: user.email, platformRole: user.platformRole ?? null },
       membership: membership ?? null,
       invitation: invitation ? { role: invitation.role } : null,
     });

@@ -19,6 +19,10 @@ env:
   APP_ENV: development
   ROOT_DOMAIN: localhost:3000
   NEXT_TELEMETRY_DISABLED: "1"
+  # CI-only value for the throwaway CI database (next start refuses Better Auth's default secret).
+  BETTER_AUTH_SECRET: ci-only-not-a-secret-0123456789abcdef
+  # Mailpit for magic-link and invitation emails in E2E (service below).
+  SMTP_URL: smtp://localhost:1025
 
 jobs:
   quality:
@@ -79,6 +83,10 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U innopower -d innopower"
           --health-interval 5s --health-timeout 5s --health-retries 20
+      # Auth E2E reads magic-link and invitation emails through Mailpit's API.
+      mailpit:
+        image: axllent/mailpit:v1.34.0
+        ports: ["1025:1025", "8025:8025"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@9bbca1e9dc2902adb87e8780fe5c98796985a62d # v6.1.1

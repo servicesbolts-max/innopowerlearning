@@ -335,7 +335,8 @@
       "label": "Main",
       "courses": "Courses",
       "programs": "Programs",
-      "signIn": "Sign in"
+      "signIn": "Sign in",
+      "account": "Account"
     },
     "home": {
       "browse": "Browse courses",
@@ -367,10 +368,7 @@
       "emptyBody": "Programs and cohorts open in a later release."
     },
     "signIn": {
-      "title": "Sign in",
-      "emptyTitle": "Sign-in is coming",
-      "emptyBody": "Accounts and sign-in arrive in a later release.",
-      "heading": "Sign in to {name}"
+      "title": "Sign in"
     },
     "footer": {
       "label": "Footer",
@@ -396,5 +394,117 @@
       "action": "Accept the invitation",
       "footer": "If you were not expecting this invitation, you can ignore this email."
     }
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "name": "Full name",
+    "signIn": {
+      "title": "Sign in",
+      "heading": "Sign in to {org}",
+      "submit": "Sign in",
+      "magicLink": "Email me a sign-in link",
+      "magicLinkSent": "Check your email. We sent a sign-in link to {email}. It works once and expires in 10 minutes.",
+      "passkey": "Sign in with a passkey",
+      "google": "Continue with Google",
+      "microsoft": "Continue with Microsoft",
+      "or": "or",
+      "noAccount": "New here?",
+      "createAccount": "Create an account",
+      "ssoOnly": "{org} signs in through your organization account."
+    },
+    "twoFactor": {
+      "heading": "Enter your verification code",
+      "help": "Open your authenticator app and enter the 6-digit code for {org}.",
+      "code": "Verification code",
+      "submit": "Verify",
+      "useBackup": "Use a backup code instead",
+      "backupCode": "Backup code",
+      "trustDevice": "Trust this device for 30 days"
+    },
+    "signUp": {
+      "title": "Create an account",
+      "heading": "Join {org}",
+      "submit": "Create account",
+      "haveAccount": "Already have an account?",
+      "inviteOnly": "{org} is invite-only. Use the link in your invitation email to join.",
+      "domain": "Use an email address from: {domains}.",
+      "application": "New accounts at {org} are reviewed before you can sign in.",
+      "passwordHelp": "At least 10 characters."
+    },
+    "invite": {
+      "title": "Invitation",
+      "heading": "You are invited to {org}",
+      "body": "This invitation is for {email}, as {role}. It expires on {date}.",
+      "continue": "Accept and create an account",
+      "signIn": "Accept with an existing account",
+      "invalidTitle": "This invitation is not valid",
+      "invalidBody": "It may have expired, been used already, or been withdrawn. Ask {org} for a new invitation."
+    },
+    "security": {
+      "title": "Account security",
+      "signedInAs": "Signed in as {email}",
+      "required": "Your role requires two-step verification. Set it up to continue to admin pages.",
+      "twoFactorHeading": "Two-step verification",
+      "twoFactorOn": "On: you enter a code from your authenticator app when you sign in.",
+      "twoFactorOff": "Off",
+      "enable": "Turn on two-step verification",
+      "confirmPassword": "Confirm your password to continue",
+      "scan": "Scan this QR code with your authenticator app, or enter the key below.",
+      "qrAlt": "QR code for your authenticator app",
+      "manualKey": "Setup key",
+      "verify": "Confirm and turn on",
+      "backupHeading": "Your backup codes",
+      "backupHelp": "Each code works once if you lose your phone. Store them somewhere safe; they will not be shown again.",
+      "done": "Done",
+      "disable": "Turn off two-step verification",
+      "passkeysHeading": "Passkeys",
+      "passkeysHelp": "Sign in with your fingerprint, face or screen lock instead of a password.",
+      "passkeysNone": "No passkeys yet.",
+      "addPasskey": "Add a passkey",
+      "passkeyAdded": "Passkey added.",
+      "removePasskey": "Remove",
+      "signOut": "Sign out"
+    },
+    "admin": {
+      "title": "Admin",
+      "heading": "{org} admin",
+      "body": "The partner admin panel arrives in a later release. You have admin access and two-step verification is on."
+    },
+    "account": {
+      "signIn": "Sign in",
+      "prefix": "Account: "
+    },
+    "impersonation": {
+      "banner": "You are viewing as {name}. Password, security and payment changes are blocked. Ends at {time}.",
+      "stop": "Stop viewing as"
+    },
+    "errors": {
+      "INVALID_EMAIL_OR_PASSWORD": "That email and password do not match.",
+      "USER_ALREADY_EXISTS": "An account with this email already exists. Sign in instead.",
+      "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL": "An account with this email already exists. Sign in instead.",
+      "PASSWORD_TOO_SHORT": "Use at least 10 characters.",
+      "PASSWORD_COMPROMISED": "This password appeared in a data breach. Choose a different one.",
+      "INVALID_CODE": "That code is not right. Try again.",
+      "INVALID_TWO_FACTOR_COOKIE": "Your sign-in timed out. Start again.",
+      "TOO_MANY_REQUESTS": "Too many attempts. Wait a minute and try again.",
+      "invite_required": "{org} is invite-only. Use the link in your invitation email.",
+      "domain_not_allowed": "Accounts at {org} need an email address from an approved domain.",
+      "pending_approval": "Your request to join {org} is waiting for approval.",
+      "membership_suspended": "Your access to {org} is suspended. Contact the organization.",
+      "sso_required": "{org} signs in through your organization account.",
+      "method_not_allowed_for_admins": "Admins sign in with a password and verification code, or a passkey.",
+      "not_a_platform_user": "Sign in on your organization site.",
+      "generic": "Something went wrong. Try again.",
+      "INVALID_EMAIL": "Enter your email address first."
+    }
+  },
+  "roles": {
+    "tenant_admin": "admin",
+    "program_manager": "program manager",
+    "instructor": "instructor",
+    "teaching_assistant": "teaching assistant",
+    "learner": "learner",
+    "sponsor_viewer": "sponsor"
   }
 }

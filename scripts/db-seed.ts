@@ -13,13 +13,28 @@ try {
 
 const sql = ownerConnection(e, "db:seed");
 try {
-  const summary = await seedDemo(sql);
+  const summary = await seedDemo(sql, {
+    rotateDemoPasswords: process.argv.includes("--rotate-demo-passwords"),
+  });
   const host = (slug: string) => (slug === "hub" ? e.ROOT_DOMAIN : `${slug}.${e.ROOT_DOMAIN}`);
   console.log(`db:seed: ${summary.plans} plans, ${summary.tenants.length} tenants`);
   for (const t of summary.tenants) {
     console.log(`  ${t.created ? "+" : "="} ${t.slug.padEnd(20)} http://${host(t.slug)}`);
   }
-  console.log("db:seed: demo accounts arrive with auth in P3.");
+  if (summary.newAccounts.length > 0) {
+    console.log(
+      "db:seed: new demo accounts (passwords are shown only now; admins must set up 2FA):",
+    );
+    for (const a of summary.newAccounts) {
+      console.log(
+        `  ${a.where.padEnd(20)} ${a.role.padEnd(16)} ${a.email.padEnd(34)} ${a.password}`,
+      );
+    }
+  } else {
+    console.log(
+      "db:seed: demo accounts already exist. Run pnpm db:seed --rotate-demo-passwords for new passwords.",
+    );
+  }
 } catch (error) {
   console.error(`db:seed failed: ${describeError(error)} (run pnpm db:migrate first).`);
   process.exitCode = 1;

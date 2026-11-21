@@ -1,6 +1,7 @@
 // Public API of the design system (docs/DESIGN_SYSTEM.md). Import from "@/design-system" only.
 export { DsProvider } from "./provider";
 export { cx } from "./utils/cx";
+export { useIsClient } from "./utils/use-is-client";
 
 // Foundations and actions
 export * from "./components/Text/Text";

@@ -1,6 +1,12 @@
 import { eq, isNull, and } from "drizzle-orm";
 import { z } from "zod";
-import { featureFlags, tenantSettings, tenants, tenantThemes } from "@/db/schema";
+import {
+  featureFlags,
+  tenantSettings,
+  tenants,
+  tenantThemes,
+  type RegistrationMode,
+} from "@/db/schema";
 import { logger } from "@/lib/logger";
 import { safeBuildTheme, themeToCss } from "@/lib/theme";
 import { resolveTenant } from "./lookup";
@@ -29,6 +35,9 @@ export interface TenantShell {
   locale: string;
   timeZone: string;
   placeholderBranding: boolean;
+  /** Public sign-up rules, shown on the sign-in and sign-up pages (Section 6.1). */
+  registrationMode: RegistrationMode;
+  allowedEmailDomains: string[];
   flags: Record<FeatureFlagKey, boolean>;
   /** Validated `--name:value;` CSS from the theme engine, for a server-rendered <style>. */
   themeCss: string;
@@ -108,6 +117,8 @@ export async function loadTenantShellById(tenantId: string): Promise<TenantShell
       locale: settings?.locale ?? "en",
       timeZone: settings?.timeZone ?? "UTC",
       placeholderBranding: settings?.placeholderBranding ?? false,
+      registrationMode: settings?.registrationMode ?? "invite_only",
+      allowedEmailDomains: settings?.allowedEmailDomains ?? [],
       flags,
       themeCss: themeToCss(built),
     };

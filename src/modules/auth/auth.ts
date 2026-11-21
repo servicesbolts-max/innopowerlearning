@@ -129,6 +129,17 @@ function createAuth() {
       }),
     },
     databaseHooks: {
+      user: {
+        create: {
+          // Magic-link and OAuth sign-ups can lack a name: show the email's local part instead.
+          before: async (user) => ({
+            data: {
+              ...user,
+              name: user.name?.trim() || user.email.slice(0, user.email.indexOf("@")).slice(0, 200),
+            },
+          }),
+        },
+      },
       session: {
         create: {
           before: async (session, ctx) => {

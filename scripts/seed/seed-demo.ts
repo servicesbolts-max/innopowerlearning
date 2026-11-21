@@ -1,10 +1,14 @@
+import { randomBytes } from "node:crypto";
 import type postgres from "postgres";
 import { uuidv7 } from "../../src/lib/ids";
-import { DEMO_PLANS, DEMO_TENANTS } from "./demo-data";
+import { hashPassword } from "../../src/modules/auth/password";
+import { DEMO_ACCOUNTS, DEMO_PLANS, DEMO_TENANTS } from "./demo-data";
 
 export interface SeedSummary {
   plans: number;
   tenants: { slug: string; id: string; created: boolean }[];
+  /** Accounts created by this run, with their one-time passwords (printed once, never stored). */
+  newAccounts: { email: string; password: string; where: string; role: string }[];
 }
 
 /**
@@ -14,7 +18,10 @@ export interface SeedSummary {
  * Every tenant write happens with app.tenant_id set to that tenant, so the seed also works where
  * the owner is not a superuser and is bound by FORCE ROW LEVEL SECURITY (hosted Postgres).
  */
-export async function seedDemo(sql: postgres.Sql): Promise<SeedSummary> {
+export async function seedDemo(
+  sql: postgres.Sql,
+  options: { rotateDemoPasswords?: boolean } = {},
+): Promise<SeedSummary> {
   return sql.begin(async (tx) => {
     const planIds = new Map<string, string>();
     for (const p of DEMO_PLANS) {
@@ -34,7 +41,7 @@ export async function seedDemo(sql: postgres.Sql): Promise<SeedSummary> {
     await tx`reset role`;
     const ids = new Map(existing.map((r) => [r.slug, r.id]));
 
-    const summary: SeedSummary = { plans: DEMO_PLANS.length, tenants: [] };
+    const summary: SeedSummary = { plans: DEMO_PLANS.length, tenants: [], newAccounts: [] };
     for (const t of DEMO_TENANTS) {
       const created = !ids.has(t.slug);
       const id = ids.get(t.slug) ?? uuidv7();
@@ -70,6 +77,50 @@ export async function seedDemo(sql: postgres.Sql): Promise<SeedSummary> {
           on conflict (tenant_id, key) do update set enabled = excluded.enabled, deleted_at = null`;
       }
       summary.tenants.push({ slug: t.slug, id, created });
+    }
+    // Demo accounts (Section 11): identity rows as app_auth, memberships per tenant. Existing
+    // accounts are left alone, so their passwords never change and are never printed again.
+    const tenantIds = new Map(summary.tenants.map((t) => [t.slug, t.id]));
+    for (const account of DEMO_ACCOUNTS) {
+      await tx`set local role app_auth`;
+      const [existing] = await tx<
+        { id: string }[]
+      >`select id from users where email = ${account.email}`;
+      let userId = existing?.id;
+      if (userId && options.rotateDemoPasswords) {
+        // Explicit opt-in (--rotate-demo-passwords): new passwords for existing demo accounts.
+        const password = randomBytes(15).toString("base64url");
+        await tx`update accounts set password = ${await hashPassword(password)}
+          where user_id = ${userId} and provider_id = 'credential'`;
+        summary.newAccounts.push({
+          email: account.email,
+          password,
+          where: account.tenant,
+          role: account.role ?? account.platformRole ?? "",
+        });
+      }
+      if (!userId) {
+        userId = uuidv7();
+        const password = randomBytes(15).toString("base64url");
+        await tx`insert into users (id, name, email, email_verified, platform_role)
+          values (${userId}, ${account.name}, ${account.email}, true, ${account.platformRole ?? null})`;
+        await tx`insert into accounts (id, user_id, account_id, provider_id, password)
+          values (${uuidv7()}, ${userId}, ${userId}, 'credential', ${await hashPassword(password)})`;
+        summary.newAccounts.push({
+          email: account.email,
+          password,
+          where: account.tenant,
+          role: account.role ?? account.platformRole ?? "",
+        });
+      }
+      await tx`reset role`;
+      if (account.role) {
+        const tenantId = tenantIds.get(account.tenant)!;
+        await tx`select set_config('app.tenant_id', ${tenantId}, true)`;
+        await tx`insert into memberships (tenant_id, id, user_id, role, status)
+          values (${tenantId}, ${uuidv7()}, ${userId}, ${account.role}, 'active')
+          on conflict (tenant_id, user_id) do nothing`;
+      }
     }
     await tx`select set_config('app.tenant_id', '', true)`;
     return summary;

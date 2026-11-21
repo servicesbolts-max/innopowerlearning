@@ -1,9 +1,11 @@
-import { LogIn } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { PlaceholderPage } from "../../../../_components/placeholder-page";
+import { oauthProviders } from "../../../../_lib/auth";
+import { AuthCard } from "../../../../_components/auth-card";
 import { getTenantShell } from "../../../../_lib/tenancy";
+import { Suspense } from "react";
+import { SignInForm, SignInFromQuery } from "./sign-in-form";
 
 // Blocks on params by design: see the tenant layout.
 export const instant = false;
@@ -11,22 +13,31 @@ export const instant = false;
 type Props = { params: Promise<{ tenant: string }> };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("tenant.signIn");
-  return { title: t("title") };
+  const t = await getTranslations("auth.signIn");
+  return { title: t("title"), robots: { index: false } };
 }
 
 export default async function SignInPage({ params }: Props) {
   const shell = await getTenantShell((await params).tenant);
   if (!shell) notFound();
-  const t = await getTranslations("tenant.signIn");
-  const tenant = await getTranslations("tenant");
+  const t = await getTranslations("auth.signIn");
   return (
-    <PlaceholderPage
-      title={t("heading", { name: shell.name })}
-      emptyTitle={t("emptyTitle")}
-      body={t("emptyBody")}
-      icon={LogIn}
-      back={{ href: "/", label: tenant("back", { name: shell.name }) }}
-    />
+    <AuthCard heading={t("heading", { org: shell.name })}>
+      <Suspense
+        fallback={
+          <SignInForm
+            org={shell.name}
+            ssoOnly={shell.registrationMode === "sso_only"}
+            providers={oauthProviders()}
+          />
+        }
+      >
+        <SignInFromQuery
+          org={shell.name}
+          ssoOnly={shell.registrationMode === "sso_only"}
+          providers={oauthProviders()}
+        />
+      </Suspense>
+    </AuthCard>
   );
 }

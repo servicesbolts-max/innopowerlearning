@@ -17,11 +17,14 @@ export function SiteHeader({
   brand,
   items,
   navLabel,
+  account,
 }: {
   brand: { name: string; monogram: string; href: string };
   /** Primary links; mark one with `emphasis` for the call to action (Sign in). */
   items: NavLinkItem[];
   navLabel: string;
+  /** The account entry after the links (sign in, or the signed-in person). */
+  account?: ReactNode;
 }) {
   return (
     <header className="hairline-b bg-bg">
@@ -37,6 +40,7 @@ export function SiteHeader({
           <Suspense fallback={<NavLinkList items={items} />}>
             <NavLinks items={items} />
           </Suspense>
+          {account}
         </nav>
       </div>
     </header>
