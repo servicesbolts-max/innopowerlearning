@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { env } from "@/lib/env";
+import { siteEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import {
   cachedResolver,
@@ -22,7 +22,10 @@ const NOT_FOUND_PATH = "/__not_found";
 const RESERVED_HEADERS = /^x-(tenant|innopower)-/i;
 
 export async function proxy(request: NextRequest) {
-  const { ROOT_DOMAIN, APP_ENV } = env();
+  // Only the two routing values: the Hub must keep working when database settings are missing
+  // (a tenant lookup then fails inside the try below and answers 503). The path fallback needs
+  // APP_ENV set explicitly, so an unset value never turns it on.
+  const { ROOT_DOMAIN, APP_ENV } = siteEnv();
   const headers = new Headers(request.headers);
   for (const name of [...headers.keys()]) if (RESERVED_HEADERS.test(name)) headers.delete(name);
 
