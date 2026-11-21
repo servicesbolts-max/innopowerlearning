@@ -2,27 +2,42 @@ import { cacheLife, cacheTag } from "next/cache";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import {
+  activeTenantIdForSlug,
+  isPartnerSlug,
   listPublicPartners,
-  loadTenantShell,
+  loadTenantShellById,
   type PublicPartner,
   type TenantShell,
 } from "@/modules/tenancy";
 
 /**
- * Cached reads for the Hub and tenant shells. Cache entries are keyed by their arguments and
- * tagged by tenant (`tenant:<id>`, `tenant:<id>:theme`), so a settings or theme save can expire
- * exactly one tenant with updateTag (P10b).
+ * Cached reads for the Hub and tenant shells.
+ *
+ * - Tenant data is cached by tenant id and tagged `tenant:<id>` and `tenant:<id>:theme`, so a
+ *   settings or theme save expires exactly one tenant with updateTag (P10b).
+ * - Only the slug → id step is cached by slug, briefly and tagged `tenant-slug:<slug>`: a
+ *   rename, reassignment or suspension (P11) expires it, and it lapses within minutes anyway.
+ *   A reassigned slug can therefore never serve the previous tenant's cached shell or id.
+ * - Strings that are not valid partner slugs never reach a cache (no cache-filling by junk).
  */
 export async function getTenantShell(slug: string): Promise<TenantShell | null> {
+  if (!isPartnerSlug(slug)) return null;
+  const id = await activeTenantId(slug);
+  return id ? shellById(id) : null;
+}
+
+async function activeTenantId(slug: string): Promise<string | null> {
   "use cache";
-  const shell = await loadTenantShell(slug);
-  if (shell) {
-    cacheLife("hours");
-    cacheTag(`tenant:${shell.id}`, `tenant:${shell.id}:theme`);
-  } else {
-    cacheLife("seconds"); // an unknown slug may be provisioned at any time
-  }
-  return shell;
+  cacheLife("minutes");
+  cacheTag(`tenant-slug:${slug}`);
+  return activeTenantIdForSlug(slug);
+}
+
+async function shellById(id: string): Promise<TenantShell | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`tenant:${id}`, `tenant:${id}:theme`);
+  return loadTenantShellById(id);
 }
 
 export async function getPublicPartners(): Promise<PublicPartner[]> {

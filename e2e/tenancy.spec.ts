@@ -65,6 +65,34 @@ test.describe("tenant hosts", () => {
   });
 });
 
+test.describe("shell keyboard access", () => {
+  test("skip link first, then a visible 2 px focus ring and the current page marked", async ({
+    page,
+  }) => {
+    await page.goto(at(tenantHost("lsetf"), "/courses"));
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
+    await page.keyboard.press("Tab"); // brand
+    await page.keyboard.press("Tab");
+    const courses = page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Courses" });
+    await expect(courses).toBeFocused();
+    await expect(courses).toHaveAttribute("aria-current", "page");
+    expect(await courses.evaluate((el) => getComputedStyle(el).outlineWidth)).toBe("2px");
+    await expect(
+      page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Programs" }),
+    ).not.toHaveAttribute("aria-current");
+  });
+
+  test("the skip link moves focus to the main content", async ({ page }) => {
+    await page.goto(at(base.hostname, "/partners"));
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Enter");
+    await expect(page.locator("main#main")).toBeFocused();
+  });
+});
+
 test.describe("requests the proxy refuses with a real 404", () => {
   const cases: [string, string, string][] = [
     ["unknown tenant", tenantHost("no-such-partner"), "/"],

@@ -54,8 +54,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except build assets, the image optimizer, health probes and static files.
-  matcher: [
-    "/((?!_next/static|_next/image|api/health|api/ready|favicon\\.ico|.*\\.(?:png|jpg|jpeg|svg|ico|webp|avif|woff2|txt|xml)$).*)",
-  ],
+  // Everything except build assets, the image optimizer and the two health probes (anchored, so
+  // a future /api/health-admin still goes through host resolution). Static files are decided in
+  // decideRoute, so /t/<x>.png and hub-only paths cannot skip the proxy by their extension.
+  matcher: ["/((?!_next/static|_next/image|api/health$|api/ready$|favicon\\.ico$).*)"],
 };

@@ -211,15 +211,27 @@
   }
 }
 
-/* Focus ring for React Aria elements, which expose keyboard focus as [data-focus-visible]. */
+/*
+ * Focus ring. React Aria elements expose keyboard focus as [data-focus-visible]; plain links and
+ * other native elements use :focus-visible. Without the second selector, `outline: none` would
+ * hide focus on every non-React-Aria link (WCAG 2.4.7).
+ */
 @utility focus-ring {
   outline: none;
+  /* Separate blocks: Tailwind drops later items of a selector list inside @utility. */
   &[data-focus-visible] {
+    outline: 2px solid var(--accent-fill);
+    outline-offset: 2px;
+  }
+  &:not([data-rac]):focus-visible {
     outline: 2px solid var(--accent-fill);
     outline-offset: 2px;
   }
   @media (forced-colors: active) {
     &[data-focus-visible] {
+      outline-color: Highlight;
+    }
+    &:not([data-rac]):focus-visible {
       outline-color: Highlight;
     }
   }

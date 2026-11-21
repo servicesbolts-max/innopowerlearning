@@ -1,10 +1,12 @@
 import NextLink from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { cx, Monogram } from "@/design-system";
+import { NavLinkList, NavLinks, type NavLinkItem } from "./nav-links";
 
 /**
- * Site chrome shared by the Hub and tenant shells: a header with the brand and primary
- * navigation, and a footer. Server components; tokens only.
+ * Site chrome shared by the Hub and tenant shells: a skip link, a header with the brand and
+ * primary navigation, and a footer. Server components (the nav marks the current page on the
+ * client); tokens only.
  */
 export interface NavItem {
   href: string;
@@ -15,12 +17,11 @@ export function SiteHeader({
   brand,
   items,
   navLabel,
-  cta,
 }: {
   brand: { name: string; monogram: string; href: string };
-  items: NavItem[];
+  /** Primary links; mark one with `emphasis` for the call to action (Sign in). */
+  items: NavLinkItem[];
   navLabel: string;
-  cta?: NavItem;
 }) {
   return (
     <header className="hairline-b bg-bg">
@@ -33,23 +34,9 @@ export function SiteHeader({
           <span className="truncate">{brand.name}</span>
         </NextLink>
         <nav aria-label={navLabel} className="-mx-2 flex flex-wrap items-center">
-          {items.map((item) => (
-            <NextLink
-              key={item.href}
-              href={item.href}
-              className="flex min-h-touch items-center rounded-control px-2 text-subheadline text-label-secondary focus-ring hover:text-label"
-            >
-              {item.label}
-            </NextLink>
-          ))}
-          {cta && (
-            <NextLink
-              href={cta.href}
-              className="flex min-h-touch items-center rounded-control px-2 text-subheadline font-semibold text-accent-text focus-ring"
-            >
-              {cta.label}
-            </NextLink>
-          )}
+          <Suspense fallback={<NavLinkList items={items} />}>
+            <NavLinks items={items} />
+          </Suspense>
         </nav>
       </div>
     </header>
@@ -87,7 +74,10 @@ export function SiteFooter({
   );
 }
 
-/** A link styled as the filled primary button (DS Button renders a <button>, not a link). */
+/**
+ * A link styled as a filled or tinted button (DS Button renders a <button>, not a link). The
+ * transparent border becomes visible in forced-colors mode, where backgrounds are removed.
+ */
 export function PrimaryLink({
   href,
   children,
@@ -101,7 +91,7 @@ export function PrimaryLink({
     <NextLink
       href={href}
       className={cx(
-        "inline-flex min-h-touch items-center justify-center rounded-control px-4 text-body font-semibold focus-ring",
+        "inline-flex min-h-touch items-center justify-center rounded-control border border-transparent px-4 text-body font-semibold focus-ring",
         variant === "filled"
           ? "bg-accent-fill text-on-accent"
           : "bg-accent-tint text-accent-text-on-tint",
@@ -112,7 +102,20 @@ export function PrimaryLink({
   );
 }
 
-/** Page frame: column layout so the footer sits at the bottom of short pages. */
-export function ShellFrame({ children }: { children: ReactNode }) {
-  return <div className="flex min-h-dvh flex-col">{children}</div>;
+/**
+ * Page frame: a skip link to `#main` (WCAG 2.4.1), then a column layout so the footer sits at the
+ * bottom of short pages.
+ */
+export function ShellFrame({ skipLabel, children }: { skipLabel: string; children: ReactNode }) {
+  return (
+    <div className="flex min-h-dvh flex-col">
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-control bg-bg px-4 py-3 text-body font-semibold text-accent-text focus-ring focus:not-sr-only focus:fixed focus:start-4 focus:top-4"
+      >
+        {skipLabel}
+      </a>
+      {children}
+    </div>
+  );
 }

@@ -19,6 +19,7 @@ export default async function NotFound() {
     <main id="main">
       <PlaceholderPage
         title={t("title")}
+        emptyTitle={t("emptyTitle")}
         body={t("body")}
         icon={Compass}
         back={{ href: hub, label: t("home", { product: PRODUCT_NAME }) }}

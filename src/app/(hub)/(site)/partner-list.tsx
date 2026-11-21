@@ -12,11 +12,14 @@ export async function PartnerList({
   partners,
   path = "/",
   linkLabel,
+  emptyHeadingLevel = "h2",
 }: {
   partners: PublicPartner[];
   /** Page on the partner's host to link to. */
   path?: string;
   linkLabel: "visit" | "signIn";
+  /** Heading level of the empty state, so it fits the surrounding outline. */
+  emptyHeadingLevel?: "h2" | "h3";
 }) {
   const t = await getTranslations("hub");
   if (partners.length === 0) {
@@ -24,7 +27,7 @@ export async function PartnerList({
       <EmptyState
         title={t("partners.emptyTitle")}
         description={t("partners.emptyBody")}
-        headingLevel="h2"
+        headingLevel={emptyHeadingLevel}
       />
     );
   }

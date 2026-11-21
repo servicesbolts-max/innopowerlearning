@@ -50,21 +50,24 @@
         "title": "Terms of use",
         "body": "Editable terms arrive in a later release. Templates are not legal advice."
       },
-      "back": "Back to home"
+      "back": "Back to home",
+      "comingSoon": "Coming in a later release"
     },
     "footer": {
       "label": "Footer",
       "owner": "© {owner}",
       "privacy": "Privacy",
       "terms": "Terms",
-      "status": "Service status",
       "designSystem": "Design system"
     },
     "notFound": {
       "title": "Page not found",
       "body": "The page or organization you are looking for does not exist.",
-      "home": "Go to {product}"
-    }
+      "home": "Go to {product}",
+      "emptyTitle": "Nothing at this address"
+    },
+    "skipToContent": "Skip to content",
+    "titleTemplate": "%s · {product}"
   },
   "ds": {
     "loading": "Loading",
@@ -330,7 +333,6 @@
   "tenant": {
     "nav": {
       "label": "Main",
-      "home": "{name} home",
       "courses": "Courses",
       "programs": "Programs",
       "signIn": "Sign in"
@@ -365,15 +367,18 @@
       "emptyBody": "Programs and cohorts open in a later release."
     },
     "signIn": {
-      "title": "Sign in to {name}",
+      "title": "Sign in",
       "emptyTitle": "Sign-in is coming",
       "emptyBody": "Accounts and sign-in arrive in a later release.",
-      "back": "Back to {name}"
+      "heading": "Sign in to {name}"
     },
     "footer": {
       "label": "Footer",
       "poweredBy": "Powered by {product}",
       "placeholder": "Placeholder branding: the colors and logo are stand-ins for development."
-    }
+    },
+    "skipToContent": "Skip to content",
+    "titleTemplate": "%s · {name}",
+    "back": "Back to {name}"
   }
 }

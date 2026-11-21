@@ -27,6 +27,7 @@ paths:
   1. Validate `ctx.tenantId` with `z.uuid()`.
   2. `set local role app_user` (or `app_platform` only on the audited platform path).
   3. `select set_config('app.tenant_id', ${ctx.tenantId}, true)`, using a bind parameter. Never build `SET LOCAL ... = '${id}'` by string interpolation.
+- **The one exception: pre-tenant lookups.** Host resolution and the public partner directory run before any tenant is known. They use `withoutTenant`, which is private to `src/modules/tenancy` (not exported from `index.ts`). It runs as `app_user` with no `app.tenant_id`, so every tenant table returns nothing. It may only call the `SECURITY DEFINER` lookup functions owned by `app_resolver` (`resolve_tenant_by_slug`, `resolve_tenant_by_host`, `list_public_partners`). Never use it to read tenant tables, and never export it.
 - **Views and functions:**
   - Views over tenant tables use `with (security_invoker = true)`.
   - No materialized views over tenant data. RLS cannot apply to them.

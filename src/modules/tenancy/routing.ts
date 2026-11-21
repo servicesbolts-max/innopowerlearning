@@ -37,6 +37,9 @@ export const TENANT_PREFIX = "/t";
 /** Hub pages a tenant host must not serve (tenants have their own `/` and `/sign-in`). */
 const HUB_ONLY_ON_TENANT = ["/design", "/partners", "/become-a-partner", "/library", "/legal"];
 
+/** A file in public/ at the site root, such as /icon.png. Never a path under /t. */
+const PUBLIC_FILE = /^\/[\w.-]+\.(?:png|jpe?g|svg|ico|webp|avif|woff2)$/;
+
 const under = (pathname: string, prefix: string) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
 
@@ -71,6 +74,8 @@ export async function decideRoute(
     }
 
     case "tenant": {
+      // Root-level public files (icons, fonts) are served as they are on every host.
+      if (PUBLIC_FILE.test(pathname)) return NEXT;
       if (under(pathname, TENANT_PREFIX) || HUB_ONLY_ON_TENANT.some((p) => under(pathname, p))) {
         return NOT_FOUND;
       }
@@ -83,22 +88,43 @@ export async function decideRoute(
 }
 
 /**
- * Wraps a resolver with a small in-process TTL cache keyed by the lookup (not by request), so
- * a burst of requests for one host costs one query. Negative results are cached too, briefly.
- * Per process; a shared cache (Redis) can replace it later without changing callers.
+ * Wraps a resolver with a small in-process TTL cache keyed by the lookup (not by request), so a
+ * burst of requests for one host costs one query. Misses live in their own, smaller cache with a
+ * shorter TTL: random Host headers (custom-domain probes) can churn that one, but never evict the
+ * entries of real tenants. Per process; a shared cache (Redis) can replace it later.
  */
 export function cachedResolver(
   resolve: TenantResolver,
-  { ttlMs = 30_000, negativeTtlMs = 5_000, max = 1_000, now = () => Date.now() } = {},
+  {
+    ttlMs = 30_000,
+    negativeTtlMs = 5_000,
+    max = 1_000,
+    negativeMax = 200,
+    now = () => Date.now(),
+  } = {},
 ): TenantResolver {
-  const cache = new Map<string, { value: ResolvedTenant | null; expires: number }>();
+  type Entry = { value: ResolvedTenant | null; expires: number };
+  const hits = new Map<string, Entry>();
+  const misses = new Map<string, Entry>();
+
+  const put = (cache: Map<string, Entry>, limit: number, key: string, entry: Entry) => {
+    cache.delete(key); // a refreshed key moves to the back and never evicts another entry
+    if (cache.size >= limit) cache.delete(cache.keys().next().value as string);
+    cache.set(key, entry);
+  };
+
   return async (target) => {
     const key = target.by === "slug" ? `slug:${target.slug}` : `host:${target.host}`;
-    const hit = cache.get(key);
-    if (hit && hit.expires > now()) return hit.value;
+    const cached = hits.get(key) ?? misses.get(key);
+    if (cached && cached.expires > now()) return cached.value;
     const value = await resolve(target);
-    if (cache.size >= max) cache.delete(cache.keys().next().value as string);
-    cache.set(key, { value, expires: now() + (value ? ttlMs : negativeTtlMs) });
+    if (value) {
+      misses.delete(key);
+      put(hits, max, key, { value, expires: now() + ttlMs });
+    } else {
+      hits.delete(key);
+      put(misses, negativeMax, key, { value, expires: now() + negativeTtlMs });
+    }
     return value;
   };
 }

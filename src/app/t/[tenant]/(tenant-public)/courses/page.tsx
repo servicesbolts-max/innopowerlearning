@@ -7,23 +7,23 @@ import { getTenantShell } from "../../../../_lib/tenancy";
 
 type Props = { params: Promise<{ tenant: string }> };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const shell = await getTenantShell((await params).tenant);
+export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("tenant.courses");
-  return { title: t("title", { name: shell?.name ?? "" }) };
+  return { title: t("title") };
 }
 
 export default async function CoursesPage({ params }: Props) {
   const shell = await getTenantShell((await params).tenant);
   if (!shell) notFound();
   const t = await getTranslations("tenant.courses");
+  const tenant = await getTranslations("tenant");
   return (
     <PlaceholderPage
-      title={t("title", { name: shell.name })}
+      title={t("title")}
       emptyTitle={t("emptyTitle")}
       body={t("emptyBody")}
       icon={BookOpen}
-      back={{ href: "/", label: shell.name }}
+      back={{ href: "/", label: tenant("back", { name: shell.name }) }}
     />
   );
 }

@@ -6,7 +6,7 @@ import { PartnerList } from "../partner-list";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("hub");
-  return { title: `${t("partners.title")} · ${PRODUCT_NAME}` };
+  return { title: t("partners.title") };
 }
 
 export default async function PartnersPage() {

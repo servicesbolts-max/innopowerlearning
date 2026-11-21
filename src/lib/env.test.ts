@@ -15,6 +15,13 @@ describe("parseEnv", () => {
     expect(parseEnv({ ...valid, ALLOW_DEMO_SEED: "true" }).ALLOW_DEMO_SEED).toBe(true);
   });
 
+  it("requires an explicit APP_ENV on a production server (no dev defaults in prod)", () => {
+    expect(() => parseEnv({ ...valid, NODE_ENV: "production" })).toThrow(/APP_ENV/);
+    expect(parseEnv({ ...valid, NODE_ENV: "production", APP_ENV: "staging" }).APP_ENV).toBe(
+      "staging",
+    );
+  });
+
   it("fails fast when DATABASE_URL is missing", () => {
     expect(() => parseEnv({})).toThrow(EnvValidationError);
   });

@@ -29,12 +29,12 @@ export default async function HubHome() {
           </h2>
           <NextLink
             href="/partners"
-            className="rounded-control text-subheadline text-accent-text underline-offset-2 focus-ring hover:underline"
+            className="inline-flex min-h-touch items-center rounded-control text-subheadline text-accent-text underline-offset-2 focus-ring hover:underline"
           >
             {t("home.allPartners")}
           </NextLink>
         </div>
-        <PartnerList partners={partners} linkLabel="visit" />
+        <PartnerList partners={partners} linkLabel="visit" emptyHeadingLevel="h3" />
       </section>
     </div>
   );

@@ -45,18 +45,30 @@ function monogramFor(name: string): TenantLogo {
 }
 
 /**
- * Everything the tenant shell renders, for an active partner slug. Null for unknown, deleted or
- * non-active tenants. Stored data that no longer validates falls back to safe defaults and is
- * logged with the tenant id only. Callers cache this per tenant (cacheTag `tenant:<id>`).
+ * The id of the active partner a slug names, or null. Callers may cache this briefly by slug;
+ * everything else about a tenant is cached by id (see loadTenantShellById).
  */
-export async function loadTenantShell(slug: string): Promise<TenantShell | null> {
+export async function activeTenantIdForSlug(slug: string): Promise<string | null> {
   const resolved = await resolveTenant({ surface: "tenant", by: "slug", slug });
-  if (!resolved || resolved.status !== "active") return null;
-  const ctx = { tenantId: resolved.id };
+  return resolved?.status === "active" ? resolved.id : null;
+}
 
-  return withTenant(ctx, async (tx) => {
-    const [tenant] = await tx.select().from(tenants).where(eq(tenants.id, resolved.id));
-    if (!tenant) return null;
+/** Everything the tenant shell renders, for an active partner slug. */
+export async function loadTenantShell(slug: string): Promise<TenantShell | null> {
+  const id = await activeTenantIdForSlug(slug);
+  return id ? loadTenantShellById(id) : null;
+}
+
+/**
+ * Everything the tenant shell renders, for an active partner tenant id. Null for a missing,
+ * deleted or non-active tenant (re-checked here, inside the tenant's own context). Stored data
+ * that no longer validates falls back to safe defaults and is logged with the tenant id only.
+ * Callers cache this by id (cacheTag `tenant:<id>`), never by slug: a slug can be reassigned.
+ */
+export async function loadTenantShellById(tenantId: string): Promise<TenantShell | null> {
+  return withTenant({ tenantId }, async (tx) => {
+    const [tenant] = await tx.select().from(tenants).where(eq(tenants.id, tenantId));
+    if (!tenant || tenant.status !== "active" || tenant.deletedAt) return null;
     const [settings] = await tx
       .select()
       .from(tenantSettings)

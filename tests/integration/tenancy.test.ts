@@ -4,9 +4,15 @@ import type postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { runMigrations, setRuntimeLoginPassword } from "@/db/migrate";
 import * as schema from "@/db/schema";
-import { closeDb } from "@/db/client";
+import { closeDb, getSql } from "@/db/client";
 import { uuidv7 } from "@/lib/ids";
-import { listPublicPartners, loadTenantShell, resolveTenant, withTenant } from "@/modules/tenancy";
+import {
+  listPublicPartners,
+  loadTenantShell,
+  loadTenantShellById,
+  resolveTenant,
+  withTenant,
+} from "@/modules/tenancy";
 import {
   appPassword,
   createTenants,
@@ -90,16 +96,79 @@ describe("withTenant", () => {
   });
 
   it("does not leak the role or tenant into the next transaction on the pool", async () => {
-    await withTenant({ tenantId: ACTIVE }, (tx) => tx.execute(sql`select 1`));
-    // Run enough plain queries to touch every pooled connection.
-    const rows = await Promise.all(
+    // Put ACTIVE's context on as many pooled connections as possible...
+    await Promise.all(
       Array.from({ length: 12 }, () =>
-        withTenant({ tenantId: SUSPENDED }, (tx) =>
-          tx.execute(sql`select count(*)::int as n from tenant_settings`),
-        ),
+        withTenant({ tenantId: ACTIVE }, (tx) => tx.execute(sql`select pg_sleep(0.05)`)),
       ),
     );
-    for (const r of rows) expect((r as unknown as { n: number }[])[0]?.n).toBe(0);
+    // ...then use those same connections without withTenant. If SET LOCAL ever became a
+    // session-level SET, these would run as app_user with ACTIVE's tenant and see its rows.
+    const pool = getSql();
+    const rows = await Promise.all(
+      Array.from({ length: 12 }, () =>
+        pool.begin(async (tx) => {
+          const [me] = await tx<{ role: string; tenant: string | null }[]>`
+            select current_user as role, current_setting('app.tenant_id', true) as tenant`;
+          await tx`set local role app_user`;
+          const [count] = await tx<{ n: number }[]>`
+            select count(*)::int as n from tenant_settings`;
+          return { ...me, n: count?.n };
+        }),
+      ),
+    );
+    for (const r of rows) {
+      expect(r.role).toBe("app_login");
+      expect(r.tenant ?? "").toBe("");
+      expect(r.n).toBe(0);
+    }
+  });
+});
+
+describe("custom domain claims", () => {
+  const contested = `contested-${tag}.example.org`;
+
+  it("never lets a tenant mark its own domain verified", async () => {
+    await expect(
+      withTenant({ tenantId: UNLISTED }, (tx) =>
+        tx.execute(sql`insert into tenant_domains (tenant_id, host, verified_at)
+          values (${UNLISTED}, ${`own-${tag}.example.org`}, now())`),
+      ),
+    ).rejects.toSatisfy((e: { message?: string; cause?: { message?: string } }) =>
+      /permission denied/.test(`${e.message} ${e.cause?.message}`),
+    );
+    await expect(
+      withTenant({ tenantId: ACTIVE }, (tx) =>
+        tx.execute(sql`update tenant_domains set verified_at = now()`),
+      ),
+    ).rejects.toSatisfy((e: { message?: string; cause?: { message?: string } }) =>
+      /permission denied/.test(`${e.message} ${e.cause?.message}`),
+    );
+  });
+
+  it("lets two tenants claim the same unverified host, so nobody can squat or probe it", async () => {
+    for (const tenantId of [ACTIVE, UNLISTED]) {
+      await withTenant({ tenantId }, (tx) =>
+        tx.execute(
+          sql`insert into tenant_domains (tenant_id, host) values (${tenantId}, ${contested})`,
+        ),
+      );
+    }
+  });
+
+  it("allows only one verified owner of a host", async () => {
+    await owner.begin(async (tx) => {
+      await tx`select set_config('app.tenant_id', ${ACTIVE}, true)`;
+      await tx`update tenant_domains set verified_at = now()
+        where host = ${contested} and tenant_id = current_setting('app.tenant_id')::uuid`;
+    });
+    await expect(
+      owner.begin(async (tx) => {
+        await tx`select set_config('app.tenant_id', ${UNLISTED}, true)`;
+        await tx`update tenant_domains set verified_at = now()
+        where host = ${contested} and tenant_id = current_setting('app.tenant_id')::uuid`;
+      }),
+    ).rejects.toThrow(/duplicate key|unique/);
   });
 });
 
@@ -173,6 +242,11 @@ describe("loadTenantShell", () => {
   it("returns null for suspended and unknown tenants", async () => {
     expect(await loadTenantShell(slugs.suspended)).toBeNull();
     expect(await loadTenantShell("nope-x")).toBeNull();
+  });
+
+  it("re-checks status by id, so a cached slug can never yield a suspended tenant", async () => {
+    expect(await loadTenantShellById(SUSPENDED)).toBeNull();
+    expect((await loadTenantShellById(ACTIVE))?.id).toBe(ACTIVE);
   });
 
   it("falls back to the default theme when stored theme data is invalid", async () => {

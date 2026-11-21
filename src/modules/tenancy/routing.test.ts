@@ -108,12 +108,51 @@ describe("cachedResolver", () => {
     expect(inner).toHaveBeenCalledTimes(4);
   });
 
-  it("evicts the oldest entry when full", async () => {
+  it("refreshing an expired key evicts nothing else", async () => {
+    let t = 0;
     const inner = vi.fn(resolve);
-    const cached = cachedResolver(inner, { max: 1 });
+    const cached = cachedResolver(inner, { ttlMs: 10, max: 2, now: () => t });
+    const a = { surface: "tenant", by: "slug", slug: "lsetf" } as const;
+    const b = { surface: "tenant", by: "host", host: "learn.lsetf.example" } as const;
+    await cached(a);
+    t = 5;
+    await cached(b);
+    t = 12; // a expired, b still fresh
+    await cached(a);
+    await cached(b);
+    expect(inner).toHaveBeenCalledTimes(3);
+  });
+
+  it("evicts the oldest miss when the miss cache is full", async () => {
+    const inner = vi.fn(resolve);
+    const cached = cachedResolver(inner, { negativeMax: 1 });
     await cached({ surface: "tenant", by: "slug", slug: "a" });
     await cached({ surface: "tenant", by: "slug", slug: "b" });
     await cached({ surface: "tenant", by: "slug", slug: "a" });
     expect(inner).toHaveBeenCalledTimes(3);
+  });
+
+  it("never lets a flood of unknown hosts evict a real tenant", async () => {
+    const inner = vi.fn(resolve);
+    const cached = cachedResolver(inner, { max: 1, negativeMax: 2 });
+    const lsetf = { surface: "tenant", by: "slug", slug: "lsetf" } as const;
+    await cached(lsetf);
+    for (let i = 0; i < 50; i++)
+      await cached({ surface: "tenant", by: "host", host: `x${i}.example` });
+    inner.mockClear();
+    await cached(lsetf);
+    expect(inner).not.toHaveBeenCalled();
+  });
+});
+
+describe("decideRoute: static files", () => {
+  it("serves root-level public files on tenant hosts as they are", async () => {
+    expect(await route("lsetf.localhost:3000", "/icon.png")).toEqual({ type: "next" });
+  });
+
+  it("does not let an extension smuggle a /t path or hub page past the checks", async () => {
+    expect(await route("lsetf.localhost:3000", "/t/wapsea/x.png")).toEqual({ type: "not-found" });
+    expect(await route("localhost:3000", "/t/x.png", true)).toEqual({ type: "not-found" });
+    expect(await route("localhost:3000", "/design/nope.png")).toEqual({ type: "not-found" });
   });
 });

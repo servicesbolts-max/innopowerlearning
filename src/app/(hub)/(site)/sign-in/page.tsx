@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { PRODUCT_NAME } from "@/lib/config";
 import { getPublicPartners } from "../../../_lib/tenancy";
 import { PartnerList } from "../partner-list";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("hub");
-  return { title: `${t("signIn.title")} · ${PRODUCT_NAME}` };
+  return { title: t("signIn.title") };
 }
 
 /** "Find your organization": sessions are scoped to each tenant host (Section 3). */

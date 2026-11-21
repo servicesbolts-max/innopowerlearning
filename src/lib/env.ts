@@ -46,6 +46,13 @@ export class EnvValidationError extends Error {
 
 /** Parses an env-like object. Exported for tests; app code uses `env()`. */
 export function parseEnv(source: Record<string, string | undefined>): ServerEnv {
+  // APP_ENV defaults to "development", which turns on dev-only behavior (the /t/<slug> path
+  // fallback, http links). A production server must therefore say which deployment it is.
+  if (source.NODE_ENV === "production" && !source.APP_ENV) {
+    throw new EnvValidationError([
+      "APP_ENV: required when NODE_ENV=production (development, preview, staging or production)",
+    ]);
+  }
   const result = serverEnvSchema.safeParse(source);
   if (!result.success) {
     // Report variable names and problems only, never values.

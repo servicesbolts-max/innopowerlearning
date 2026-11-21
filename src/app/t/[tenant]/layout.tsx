@@ -11,8 +11,10 @@ import { getTenantShell } from "../../_lib/tenancy";
 
 /**
  * Tenant shell. The proxy rewrites `{slug}.ROOT_DOMAIN/x` to `/t/{slug}/x` only for an active
- * tenant, so `tenant` is always a resolved slug here; notFound() covers a tenant suspended
- * between the proxy check and the render.
+ * tenant (re-checked at most every 30 s per process), so `tenant` is normally a resolved slug
+ * here. notFound() covers slugs that are not, or no longer, an active tenant once the cached
+ * slug lookup lapses (minutes) or is expired by its `tenant-slug:<slug>` tag. Suspension (P11)
+ * must expire that tag and `tenant:<id>` so the change applies at once.
  *
  * Active tenants are prerendered at build when the database is reachable. Cache Components needs
  * at least one param, so a placeholder (which renders notFound) stands in when it is not.
@@ -35,7 +37,9 @@ export async function generateMetadata({
   params: Promise<{ tenant: string }>;
 }): Promise<Metadata> {
   const shell = await getTenantShell((await params).tenant);
-  return shell ? { title: { default: shell.name, template: `%s · ${shell.name}` } } : {};
+  if (!shell) return {};
+  const t = await getTranslations("tenant");
+  return { title: { default: shell.name, template: t("titleTemplate", { name: shell.name }) } };
 }
 
 export default async function TenantLayout({
@@ -57,17 +61,17 @@ export default async function TenantLayout({
       <NextIntlClientProvider timeZone={shell.timeZone}>
         {/* Keyed by tenant so toasts never carry over from one tenant to another. */}
         <ToastProvider key={shell.id}>
-          <ShellFrame>
+          <ShellFrame skipLabel={t("skipToContent")}>
             <SiteHeader
               brand={{ name: shell.name, monogram: shell.logo.text, href: "/" }}
               navLabel={t("nav.label")}
               items={[
-                { href: "/courses", label: t("nav.courses") },
-                { href: "/programs", label: t("nav.programs") },
+                { href: "/courses", label: t("nav.courses"), segment: "courses" },
+                { href: "/programs", label: t("nav.programs"), segment: "programs" },
+                { href: "/sign-in", label: t("nav.signIn"), segment: "sign-in", emphasis: true },
               ]}
-              cta={{ href: "/sign-in", label: t("nav.signIn") }}
             />
-            <main id="main" className="flex-1">
+            <main id="main" tabIndex={-1} className="flex-1 outline-none">
               {children}
             </main>
             <SiteFooter label={t("footer.label")} items={[]}>

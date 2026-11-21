@@ -14,18 +14,32 @@ import { chromium } from "@playwright/test";
 
 const base = new URL(process.env.BASE_URL ?? "http://localhost:3100");
 const outDir = path.resolve(process.argv[2] ?? "docs/screenshots/p2");
-const HOSTS = ["hub", "lsetf", "wapsea", "gods-entrepreneurs", "wvstu"] as const;
+type Host = "hub" | "lsetf" | "wapsea" | "gods-entrepreneurs" | "wvstu";
+/** Every host's home, plus the secondary screens P2 adds (once each, on one host). */
+const SCREENS: { host: Host; path: string; name: string; status?: number }[] = [
+  ...(["hub", "lsetf", "wapsea", "gods-entrepreneurs", "wvstu"] as const).map((host) => ({
+    host,
+    path: "/",
+    name: host,
+  })),
+  { host: "hub", path: "/partners", name: "hub-partners" },
+  { host: "hub", path: "/sign-in", name: "hub-sign-in" },
+  { host: "hub", path: "/library", name: "hub-library" },
+  { host: "lsetf", path: "/courses", name: "lsetf-courses" },
+  { host: "lsetf", path: "/sign-in", name: "lsetf-sign-in" },
+  { host: "hub", path: "/no-such-page", name: "not-found", status: 404 },
+];
 const WIDTHS = [390, 1280] as const;
 const SCHEMES = ["light", "dark"] as const;
 
-const urlFor = (host: (typeof HOSTS)[number]) =>
-  `${base.protocol}//${host === "hub" ? "" : `${host}.`}${base.hostname}:${base.port}/`;
+const urlFor = (host: Host, path: string) =>
+  `${base.protocol}//${host === "hub" ? "" : `${host}.`}${base.hostname}:${base.port}${path}`;
 
 async function main() {
   mkdirSync(outDir, { recursive: true });
   const browser = await chromium.launch();
   try {
-    for (const host of HOSTS) {
+    for (const screen of SCREENS) {
       for (const width of WIDTHS) {
         for (const scheme of SCHEMES) {
           const page = await browser.newPage({
@@ -34,13 +48,16 @@ async function main() {
             reducedMotion: "reduce",
             deviceScaleFactor: 1,
           });
-          const res = await page.goto(urlFor(host), { waitUntil: "networkidle" });
-          if (res?.status() !== 200) throw new Error(`${urlFor(host)} returned ${res?.status()}`);
+          const url = urlFor(screen.host, screen.path);
+          const res = await page.goto(url, { waitUntil: "networkidle" });
+          if (res?.status() !== (screen.status ?? 200)) {
+            throw new Error(`${url} returned ${res?.status()}`);
+          }
           await page.getByRole("heading", { level: 1 }).waitFor();
           const height = await page.evaluate(() => document.documentElement.scrollHeight);
           await page.setViewportSize({ width, height });
           await page.waitForTimeout(300);
-          const file = path.join(outDir, `tenant-${host}-${width}-${scheme}.png`);
+          const file = path.join(outDir, `tenant-${screen.name}-${width}-${scheme}.png`);
           await page.screenshot({ path: file });
           console.log(`saved ${path.relative(process.cwd(), file)}`);
           await page.close();

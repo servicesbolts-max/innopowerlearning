@@ -170,9 +170,16 @@ describe.each(TENANT_TABLES)("isolation: $table", (fixture) => {
   });
 
   it("4. rejects moving an own row to the other tenant", async () => {
+    // Clear the composite foreign key too, so only RLS (or a missing grant) can stop the move:
+    // a foreign-key error must not be able to mask a policy without WITH CHECK.
+    const clearFk = fixture.crossTenantFk
+      ? sql`, ${sql.identifier(fixture.crossTenantFk.column)} = null`
+      : sql``;
     await expectDbError(
-      asA((tx) => tx.execute(sql`update ${table} set tenant_id = ${B} where tenant_id = ${A}`)),
-      /row-level security|permission denied|foreign key/,
+      asA((tx) =>
+        tx.execute(sql`update ${table} set tenant_id = ${B}${clearFk} where tenant_id = ${A}`),
+      ),
+      DENIED,
     );
   });
 
