@@ -1,8 +1,70 @@
 {
   "hub": {
-    "tagline": "Learning spaces for {owner} and its partners. The platform is being built.",
-    "status": "Service status",
-    "designSystem": "Design system"
+    "nav": {
+      "label": "Main",
+      "home": "Home",
+      "partners": "Partners",
+      "library": "Library",
+      "becomePartner": "Become a partner",
+      "signIn": "Sign in"
+    },
+    "home": {
+      "title": "Learning spaces for every partner",
+      "lead": "{product} is where {owner} and its partner organizations run courses, programs and cohorts.",
+      "findOrg": "Find your organization",
+      "partnersHeading": "Partner organizations",
+      "allPartners": "See all partners"
+    },
+    "partners": {
+      "title": "Partners",
+      "lead": "Organizations that run their learning on {product}.",
+      "visit": "Visit {name}",
+      "emptyTitle": "No partners listed yet",
+      "emptyBody": "Partner organizations appear here once they are set up."
+    },
+    "signIn": {
+      "title": "Find your organization",
+      "lead": "Each organization has its own sign-in page. Choose yours to continue.",
+      "go": "Sign in to {name}"
+    },
+    "presets": {
+      "training_provider": "Training provider",
+      "funded_program": "Funded program",
+      "university": "University",
+      "community_organization": "Community organization"
+    },
+    "stub": {
+      "becomePartner": {
+        "title": "Become a partner",
+        "body": "Applications to join as a partner open in a later release."
+      },
+      "library": {
+        "title": "Library",
+        "body": "Shared courses and resources arrive in a later release."
+      },
+      "privacy": {
+        "title": "Privacy notice",
+        "body": "An editable privacy template arrives in a later release. Templates are not legal advice."
+      },
+      "terms": {
+        "title": "Terms of use",
+        "body": "Editable terms arrive in a later release. Templates are not legal advice."
+      },
+      "back": "Back to home"
+    },
+    "footer": {
+      "label": "Footer",
+      "owner": "© {owner}",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "status": "Service status",
+      "designSystem": "Design system"
+    },
+    "notFound": {
+      "title": "Page not found",
+      "body": "The page or organization you are looking for does not exist.",
+      "home": "Go to {product}"
+    }
   },
   "ds": {
     "loading": "Loading",
@@ -142,7 +204,8 @@
       "module": "Module progress",
       "emptyTitle": "No courses yet",
       "emptyBody": "Create your first course. You can save it as a draft and publish it later.",
-      "duration": "{hours, plural, one {# hour} other {# hours}}"
+      "duration": "{hours, plural, one {# hour} other {# hours}}",
+      "monogram": "Innopower Learn"
     },
     "lists": {
       "preferences": "Preferences",
@@ -262,6 +325,55 @@
         "indigo": "indigo",
         "purple": "purple"
       }
+    }
+  },
+  "tenant": {
+    "nav": {
+      "label": "Main",
+      "home": "{name} home",
+      "courses": "Courses",
+      "programs": "Programs",
+      "signIn": "Sign in"
+    },
+    "home": {
+      "browse": "Browse courses",
+      "programs": "See programs",
+      "presetLead": {
+        "training_provider": "Courses you can start today, at your own pace.",
+        "funded_program": "Funded programs with cohorts, applications and support.",
+        "university": "Academic courses with terms, departments and credits.",
+        "community_organization": "Learn alongside a community of peers and mentors."
+      },
+      "highlightsHeading": "What you can do here",
+      "highlights": {
+        "learn": "Learn on any phone",
+        "learnBody": "Lessons are built for mid-range phones and slow connections.",
+        "earn": "Earn certificates",
+        "earnBody": "Finish a course to earn a certificate you can share.",
+        "together": "Learn together",
+        "togetherBody": "Ask questions and get answers from instructors and peers."
+      }
+    },
+    "courses": {
+      "title": "Courses",
+      "emptyTitle": "No courses yet",
+      "emptyBody": "The course catalog opens in a later release."
+    },
+    "programs": {
+      "title": "Programs",
+      "emptyTitle": "No programs yet",
+      "emptyBody": "Programs and cohorts open in a later release."
+    },
+    "signIn": {
+      "title": "Sign in to {name}",
+      "emptyTitle": "Sign-in is coming",
+      "emptyBody": "Accounts and sign-in arrive in a later release.",
+      "back": "Back to {name}"
+    },
+    "footer": {
+      "label": "Footer",
+      "poweredBy": "Powered by {product}",
+      "placeholder": "Placeholder branding: the colors and logo are stand-ins for development."
     }
   }
 }

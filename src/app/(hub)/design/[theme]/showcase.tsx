@@ -34,6 +34,7 @@ import {
   AlertDialog,
   Avatar,
   AvatarStack,
+  Monogram,
   Badge,
   Banner,
   Breadcrumbs,
@@ -510,6 +511,7 @@ export function Showcase({ theme, report }: { theme: DemoThemeName; report: Cont
                 <div className="flex items-center gap-4">
                   <Avatar name="Ada Okafor" size={56} />
                   <Avatar name="Kwame Mensah" size={40} />
+                  <Monogram text="IL" size={40} label={t("display.monogram")} />
                   <ProgressRing value={75} size={64} showValue aria-label={t("display.module")} />
                   <ProgressRing value={40} size={40} aria-label={t("display.module")} />
                 </div>

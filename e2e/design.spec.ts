@@ -30,12 +30,12 @@ test("the contrast report shows no failures", async ({ page }) => {
   await expect(report.getByText("Fail")).toHaveCount(0);
 });
 
-// With Cache Components the first request for an unprerendered param streams the shell (HTTP 200)
-// before notFound() resolves; later requests return 404. Assert what the visitor gets: the
-// not-found page and no showcase. See docs/ASSUMPTIONS.md (P1).
-test("unknown themes show the not-found page", async ({ page }) => {
-  await page.goto(`/design/unknown-${Date.now()}`);
-  await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+// Since P2 the proxy refuses unknown theme names before rendering, so even the first request is
+// a real 404 (Cache Components would otherwise stream the shell with HTTP 200).
+test("unknown themes show the not-found page with HTTP 404", async ({ page }) => {
+  const res = await page.goto(`/design/unknown-${Date.now()}`);
+  expect(res?.status()).toBe(404);
+  await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Design system" })).toHaveCount(0);
 });
 
