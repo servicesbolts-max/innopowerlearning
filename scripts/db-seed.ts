@@ -1,5 +1,6 @@
 import { describeError, ownerConnection, scriptEnv } from "./load-env";
 import { assertSeedAllowed } from "../src/db/seed-guard";
+import { seedDemo } from "./seed/seed-demo";
 
 const e = scriptEnv("db:seed");
 
@@ -12,13 +13,13 @@ try {
 
 const sql = ownerConnection(e, "db:seed");
 try {
-  // P0 stub: verify the schema is migrated. P2 adds the idempotent five-tenant seed (Section 11).
-  const [{ count }] = await sql<
-    { count: number }[]
-  >`select count(*)::int as count from _migrations`;
-  console.log(
-    `db:seed: database has ${count} migration(s) applied; no demo data yet (added in P2).`,
-  );
+  const summary = await seedDemo(sql);
+  const host = (slug: string) => (slug === "hub" ? e.ROOT_DOMAIN : `${slug}.${e.ROOT_DOMAIN}`);
+  console.log(`db:seed: ${summary.plans} plans, ${summary.tenants.length} tenants`);
+  for (const t of summary.tenants) {
+    console.log(`  ${t.created ? "+" : "="} ${t.slug.padEnd(20)} http://${host(t.slug)}`);
+  }
+  console.log("db:seed: demo accounts arrive with auth in P3.");
 } catch (error) {
   console.error(`db:seed failed: ${describeError(error)} (run pnpm db:migrate first).`);
   process.exitCode = 1;

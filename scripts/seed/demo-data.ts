@@ -1,0 +1,143 @@
+import { z } from "zod";
+import { DEFAULT_THEME, tenantThemeSchema } from "../../src/lib/theme";
+import { featureFlagKey, flagsForPreset, tenantLogoSchema } from "../../src/modules/tenancy";
+import type { TenantPreset } from "../../src/db/schema";
+
+/**
+ * Demo data for `pnpm db:seed` (Section 11). Everything here is generic placeholder copy for
+ * development: no claims, statistics, logos or testimonials about the real organizations.
+ * Colors and monograms are placeholders too, marked as such in the UI (placeholder_branding).
+ *
+ * P2 seeds tenancy only. Later packages add their content (courses P4a, quizzes P5a, ...) to the
+ * same idempotent seed. Demo accounts arrive with auth in P3.
+ */
+export const demoPlanSchema = z.object({
+  key: z.string(),
+  name: z.string(),
+  seats: z.number().int().nonnegative(),
+  storageGb: z.number().int().nonnegative(),
+  videoMinutes: z.number().int().nonnegative(),
+  aiCredits: z.number().int().nonnegative(),
+});
+
+export const DEMO_PLANS = z.array(demoPlanSchema).parse([
+  {
+    key: "standard",
+    name: "Standard (placeholder)",
+    seats: 500,
+    storageGb: 50,
+    videoMinutes: 3000,
+    aiCredits: 10000,
+  },
+  {
+    key: "growth",
+    name: "Growth (placeholder)",
+    seats: 5000,
+    storageGb: 500,
+    videoMinutes: 30000,
+    aiCredits: 100000,
+  },
+]);
+
+export const demoTenantSchema = z.object({
+  slug: z.string(),
+  name: z.string(),
+  kind: z.enum(["platform", "partner"]),
+  preset: z.enum([
+    "platform",
+    "training_provider",
+    "funded_program",
+    "university",
+    "community_organization",
+  ]),
+  listed: z.boolean(),
+  plan: z.string(),
+  tagline: z.string().max(200),
+  logo: tenantLogoSchema,
+  locale: z.string(),
+  timeZone: z.string(),
+  theme: tenantThemeSchema,
+  flags: z.record(featureFlagKey, z.boolean()),
+});
+export type DemoTenant = z.infer<typeof demoTenantSchema>;
+
+const partner = (
+  slug: string,
+  name: string,
+  preset: TenantPreset,
+  monogram: string,
+  theme: z.input<typeof tenantThemeSchema>,
+  tagline: string,
+  timeZone: string,
+  extraFlags: z.infer<typeof featureFlagKey>[] = [],
+) => ({
+  slug,
+  name,
+  kind: "partner" as const,
+  preset,
+  listed: true,
+  plan: "standard",
+  tagline,
+  logo: { kind: "monogram" as const, text: monogram },
+  locale: "en",
+  timeZone,
+  theme,
+  flags: flagsForPreset(preset, extraFlags),
+});
+
+const noFlags = Object.fromEntries(featureFlagKey.options.map((k) => [k, false]));
+
+export const DEMO_TENANTS: DemoTenant[] = z.array(demoTenantSchema).parse([
+  {
+    slug: "hub",
+    name: "Innopower Learn",
+    kind: "platform",
+    preset: "platform",
+    listed: false,
+    plan: "growth",
+    tagline: "Learning spaces for Innopower AI and its partners.",
+    logo: { kind: "monogram", text: "IL" },
+    locale: "en",
+    timeZone: "UTC",
+    theme: DEFAULT_THEME,
+    flags: noFlags,
+  },
+  partner(
+    "lsetf",
+    "LSETF",
+    "funded_program",
+    "LS",
+    { accent: "#0B6E4F", radius: "standard" },
+    "Placeholder copy: funded training programs, cohorts and applications.",
+    "Africa/Lagos",
+  ),
+  partner(
+    "wapsea",
+    "WAPSEA AI Training",
+    "training_provider",
+    "WA",
+    { accent: "#3A5BD9", radius: "compact", font: "inter" },
+    "Placeholder copy: practical courses in artificial intelligence.",
+    "Africa/Lagos",
+    ["ai_study_assistant"],
+  ),
+  partner(
+    "gods-entrepreneurs",
+    "God's Entrepreneurs",
+    "community_organization",
+    "GE",
+    { accent: "#B5432B", radius: "rounded" },
+    "Placeholder copy: a learning community for entrepreneurs.",
+    "Africa/Lagos",
+    ["mentorship"],
+  ),
+  partner(
+    "wvstu",
+    "William V. S. Tubman University",
+    "university",
+    "TU",
+    { accent: "#7B2D8E", radius: "standard", accentSecondary: "#C9A227" },
+    "Placeholder copy: academic terms, departments and credit-bearing courses.",
+    "Africa/Monrovia",
+  ),
+]);
