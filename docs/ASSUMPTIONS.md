@@ -71,3 +71,38 @@ Decisions made while building, so they can be reviewed and reversed. Newest at t
   - rich-text editor skin: P4a
   - video player skin: P4b
   - certificate preview: P6
+
+## P2 (2026-11-21)
+
+- **Scope (owner decisions):** identity tables (users, memberships, profiles, roles, sessions, accounts) and demo accounts move to P3, whose auth library decides their shape. The seed covers tenancy only; each later package adds its content to the same idempotent seed.
+- **Tables:** `plans` (global catalog), `tenants` (the tenant root, RLS on `id`), and the tenant tables `tenant_domains`, `tenant_themes`, `tenant_settings` and `feature_flags`. The Hub is the platform tenant (`kind = 'platform'`, slug `hub`, unlisted). Enumerations are `text` with CHECK constraints rather than Postgres enums, so they can grow with expand-only migrations.
+- **UUIDv7:** `gen_uuid_v7()` in SQL (Postgres 17 has no built-in) and `uuidv7()` in `src/lib/ids.ts`.
+- **Policies have no `TO` clause** (as in the rule template), so they also bind a non-superuser owner under forced RLS. The seed and test fixtures therefore write with `app.tenant_id` set, which works on hosted Postgres too.
+- **Subdomains resolve by `tenants.slug`; `tenant_domains` holds custom domains only.** Changing `ROOT_DOMAIN` needs no data change. A tenant may list a host once (`unique (tenant_id, host)`), and only one verified, live row per host may exist across tenants: a partial unique index on `host`, the documented exception to "tenant_id first" (`0003`). 0002 had made `host` globally unique; the review showed that let a tenant squat another organization's domain and probe which hosts others hold. Tenants cannot set `verified_at` (column grants); verification is a platform job (P10d).
+- **Pre-tenant lookups** (host resolution, the partner directory) use three `SECURITY DEFINER` functions owned by `app_resolver`. That role cannot log in or bypass RLS, and can read only a few columns of `tenants` and `tenant_domains` (column grants, plus `TO app_resolver` select policies). Execute is granted to `app_user` only. The functions return public fields, so they have no tenant filter: the deliberate exception to the definer rule. Owning them by `app_resolver` (not the migrator) keeps them working where the migrator is bound by forced RLS.
+- **Feature flags and tenants are read-only to `app_user`.** Super Admin manages them through `app_platform` in P11.
+- **Logos are typed data** (`{"kind":"monogram","text":"LS"}`), never stored SVG or markup. The `Monogram` DS component draws them on the tenant's accent fill.
+- **Routing:** the proxy (`src/proxy.ts`, logic in `src/modules/tenancy/routing.ts`) rewrites a tenant host's `/x` to `/t/<slug>/x` for active tenants only. Anything it refuses is rewritten to a path with no route, so Next renders the app's not-found page with a real 404 before anything streams. This resolves the P1 note on `/design/<unknown>`.
+  - Host matching ignores the port, so `lsetf.localhost:3100` works with `ROOT_DOMAIN=localhost:3000`.
+  - Reserved labels (`api`, `www`, `console`, ...) are refused for partners and enforced by a CHECK constraint that a unit test keeps in sync.
+  - The console host returns 404 until P11.
+  - Incoming `x-tenant-*` and `x-innopower-*` request headers are stripped.
+- **Host cache:** in-process TTL caches in front of the resolver: hits for 30 s (1000 entries), misses for 5 s in a separate 200-entry cache, so random Host headers cannot evict real tenants. A suspension can therefore take up to 30 s to reach every request; the tenant layout also re-checks status. Redis can replace the cache later without changing callers.
+- **Path fallback** (`/t/<slug>` on the hub host) is on only when `APP_ENV` is `development` or `preview`. Known limitation: links inside the tenant shell are host-relative, so following one from the fallback goes to the Hub. Revisit when preview deployments exist (P14).
+- **Prerendering (owner decision):** `generateStaticParams` for `/t/[tenant]` lists active partners from the database. Without a database (for example a CI build), it falls back to a placeholder param, and tenants render on demand. CI now seeds before `pnpm build`.
+- **Caching:** tenant data is cached by tenant id (`cacheLife("hours")`, tags `tenant:<id>` and `tenant:<id>:theme`). Only the slug → id step is cached by slug: `cacheLife("minutes")`, tag `tenant-slug:<slug>`. A renamed or reassigned slug can therefore never serve another tenant's shell or id. Strings that are not valid partner slugs never reach a cache. Rename and suspension (P11) must expire `tenant-slug:<slug>` and `tenant:<id>`, and clear the proxy's host cache. The partner directory uses the `partners` tag and `cacheLife("minutes")`. Save actions (P10) call `updateTag` with these tags.
+- **Locale and time zone** are stored per tenant in `tenant_settings`. The tenant layout nests `NextIntlClientProvider timeZone={…}`; everything is English for now.
+- **Demo branding** (placeholder; the footer says so): LSETF #0B6E4F, WAPSEA #3A5BD9 compact with Inter, God's Entrepreneurs #B5432B rounded, WVSTU #7B2D8E with a #C9A227 secondary. All pass the engine's contrast report, which a unit test checks.
+- **`db:reset`** now recreates `public` with the stock grants (owner `pg_database_owner`, `USAGE` for PUBLIC). Without them, app_login saw "relation does not exist" where a fresh database says "permission denied".
+- **Stale dev types:** `.next/dev/types` is written only by `next dev` (`next typegen` writes `.next/types`). After moving a route, start the dev server once, or `tsc` fails on the old path.
+- **Review outcomes (2026-11-21):**
+  - **APP_ENV is required when `NODE_ENV=production`.** The parsed default is `development`, which enables the path fallback and `http` links, so a production server that forgot it would fail open. Deployments (the Dockerfile, the hosting platform) must set it.
+  - **Proxy matcher:** only `_next/static`, `_next/image`, `favicon.ico` and the exact `/api/health` and `/api/ready` skip the proxy. Root-level public files (`/icon.png`) are passed through by `decideRoute`, so an extension can never smuggle `/t/...` or a hub page past the checks.
+  - **Focus ring:** the `focus-ring` utility now also styles `:focus-visible` on elements that are not React Aria (`:not([data-rac])`). Before, it hid the focus outline on plain links. Tailwind drops later items of a selector list inside `@utility`, so each selector has its own block.
+  - **Current page:** the shell nav uses `useSelectedLayoutSegments` (the route tree), not `usePathname`, because proxy rewrites make the browser URL differ from the prerendered path.
+  - **ROOT_DOMAIN must include the port the site is served on** (`localhost:3100` for a production server on 3100). Hub links to tenants are absolute, and are baked in at build for prerendered pages. Host matching itself ignores the port.
+  - **`next build` validates the full server env** (the 404 page and tenant links read `ROOT_DOMAIN` and `APP_ENV`). CI provides it.
+  - **Deferred:**
+    - Tenant-host `/api/*` is rewritten under `/t/<slug>` today. Decide the API routing (pass-through with a trusted tenant header, or tenant-scoped route handlers) when `/api/v1` lands.
+    - `app_login` can `set role app_platform` from inside any transaction. P11 must scope platform policies `TO app_platform`, and allow that role switch only in the audited module (lint or test).
+    - Rate-limiting custom-domain misses per client comes with the P3 rate limits.

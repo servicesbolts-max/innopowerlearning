@@ -1,36 +1,51 @@
 # Progress
 
-Current package: **P2 Tenancy and data** (not started). Start it in a fresh session with `/phase P2`.
+Current package: **P3 Auth and RBAC** (not started). Start it in a fresh session with `/phase P3`.
 
 ## Log
 
-- **P0 Foundation and Claude Code setup: done 2026-11-20, tag `wp-P0-done`.** Next.js 16.4, TS 6, Tailwind 4.3, Postgres 17 with RLS roles (`app_login`), checksummed migrations, CI green, hooks and skills. Gate 138 unit, integration 13/13, E2E 6/6.
-- **P1 Design system: done 2026-11-20, tag `wp-P1-done`.**
-  - Theme engine (`src/lib/theme`):
-    - OKLCH and WCAG math. It moves the accent, status and material values until every text pair reaches 4.5:1 and borders reach 3:1, in light and dark.
-    - The CSS is rendered on the server and checked against strict patterns.
-    - `safeBuildTheme` falls back to the default theme when stored data is invalid.
-    - Three demo themes: innopower, emerald, sunset.
-  - Tokens: the spec's `--label-secondary` conflict is resolved (light alpha 0.73). A few implied tokens are added. Every deviation is listed in `docs/DESIGN_SYSTEM.md`.
-  - Components: 68 exports in `src/design-system`, built on React Aria Components (ADR 0003). They cover 41 of the 45 items in Section 7.4; the command palette, rich-text skin, video skin and certificate preview are deferred.
-  - Docs and tooling:
-    - Storybook 10 with a theme × scheme matrix and the a11y addon. CI runs `build-storybook`.
-    - `/design/[theme]` showcase.
-    - Skill `/add-ds-component`.
+- **P0 Foundation: done 2026-11-20, tag `wp-P0-done`.** Next.js 16.4, TS 6, Tailwind 4.3, Postgres 17 with RLS roles (`app_login`), checksummed migrations, CI, hooks and skills.
+- **P1 Design system: done 2026-11-20, tag `wp-P1-done`.** Theme engine with WCAG contrast correction, 68 DS exports on React Aria, Storybook, the `/design/[theme]` showcase, and skill `/add-ds-component`.
+- **P2 Tenancy and data: done 2026-11-21, tag `wp-P2-done`.**
+  - Schema:
+    - `0002_tenancy`: `plans`, `tenants` (RLS on `id`), and the tenant tables `tenant_domains`, `tenant_themes`, `tenant_settings` and `feature_flags`. RLS is enabled and forced, policies have no `TO` clause, and grants are least-privilege.
+    - `app_resolver` owns three `SECURITY DEFINER` pre-tenant lookups.
+    - `0003`: hosts are unique per tenant, with one verified owner per host.
+    - `gen_uuid_v7()` and `src/lib/ids.ts`.
+  - `src/modules/tenancy`:
+    - `withTenant(ctx, fn)` on Drizzle.
+    - `classifyHost`, `resolveTenant`, `loadTenantShellById`.
+    - `decideRoute` and a cached resolver.
+    - Presets and flags, slug rules.
+  - `src/proxy.ts`:
+    - Rewrites active tenant hosts from `/x` to `/t/<slug>/x`.
+    - Real 404s before rendering, which fixes the P1 `/design/<unknown>` streamed 200.
+    - `/t/<slug>` fallback in dev and preview only.
+    - Requires `APP_ENV` in production.
+  - UI:
+    - Hub: `/`, `/partners`, `/sign-in` (find your organization), and placeholder pages.
+    - `/t/[tenant]`: per-tenant theme CSS, monogram header, current-page nav, skip link, `ToastProvider key={tenantId}`, tenant time zone.
+    - An app-wide 404 page.
+    - New DS component: `Monogram`.
+  - Seed: idempotent; the Hub plus 4 partners with presets and placeholder branding. CI seeds before the build.
+  - Skill: `/add-tenant-table`.
   - Evidence:
-    - Gate: 513 unit tests, including component axe tests and 200 sampled accents.
-    - E2E: 34/34, with axe (WCAG 2.2 AA) on 3 themes × light and dark; keyboard tests for the sheet and menu; reflow at 200%; the pinned bar.
-    - `build-storybook` passes.
-    - Screenshots: 12 acceptance PNGs (3 themes × 390/1280 × light/dark) plus 5 state captures in `docs/screenshots/p1/`.
+    - Gate: 593 unit tests.
+    - Integration: 72 passed, 3 skipped (check 5 on tables without a composite FK). The 7 isolation checks run on every tenant table, plus a catalog test.
+    - E2E: 76/76 on `:3100`, with axe on every host and screen, light and dark, plus keyboard tests.
+    - Screenshots: 44 PNGs in `docs/screenshots/p2/` (5 hosts and 6 secondary screens × 390/1280 × light/dark).
   - Reviews:
-    - Isolation and security: the security review found no defects. The isolation review found 3 issues (global toast queue, root selector, theme fallback), all fixed.
-    - a11y/design: 16 findings. All high and medium ones are fixed. The low ones are fixed or documented (radius naming, sheet swipe).
-    - Code review: 8 findings, 6 fixed and 2 documented.
+    - Isolation: 2 medium findings fixed (domain squatting, slug-keyed cache) and 2 low fixed. The `app_platform` role switch is deferred to P11.
+    - Security: 2 medium fixed (domain squatting, `APP_ENV` fail-open) and 3 low fixed.
+    - a11y: 1 high fixed (the focus ring was hidden on plain links), 3 medium and 6 low fixed.
+    - Code review: 4 fixed, 3 deferred and documented in ASSUMPTIONS.
 
-## Notes for P2
+## Notes for P3
 
-- Tenant theme: in the root layout, call `safeBuildTheme(tenant.theme)` and `themeToCss(built)`, cached per tenant (`"use cache"` + `cacheTag("tenant:<id>:theme")`). Validate with `tenantThemeSchema` in the save action.
-- Mount `<ToastProvider key={tenantId}>` and `<ToastRegion />` in the tenant shell.
-- Keep `/design` on the hub host. Reject unknown paths in the proxy: the first request for an unprerendered dynamic param streams with HTTP 200 under Cache Components.
-- E2E: another `next dev` often runs in this folder. Use `pnpm build && pnpm start --port 3100`, then `E2E_BASE_URL=http://localhost:3100 pnpm e2e`.
+- Identity tables (`users`, `memberships`, `profiles`, `roles`, `sessions`, `accounts`) and demo accounts belong to P3 (owner decision). Follow `/add-tenant-table` for each tenant table, and register it in `tests/integration/tenant-tables.ts`. `users` is global: give it a policy that shows only users with a membership in the current tenant.
+- Sessions are scoped to the tenant host. The tenant's `/sign-in` page is a placeholder at `src/app/t/[tenant]/(tenant-public)/sign-in`.
+- Seed the demo accounts in `scripts/seed/seed-demo.ts` (idempotent; write with `app.tenant_id` set; print generated passwords once).
+- Rate limits: add one for custom-domain misses in the proxy too.
+- When suspension or rename lands (P11), expire `tenant-slug:<slug>` and `tenant:<id>` and clear the proxy host cache.
+- E2E: another `next dev` often runs in this folder. Use `pnpm build && pnpm start --port 3100`, then `E2E_BASE_URL=http://localhost:3100 pnpm e2e`. `TaskStop` on `pnpm start` can leave the node child running; start the server with `node node_modules/next/dist/bin/next start --port 3100`.
 - Claude does not push. The owner runs `git push` after each package.
