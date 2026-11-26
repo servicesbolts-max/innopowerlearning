@@ -10,7 +10,7 @@ import {
   User,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState, type ReactNode, type RefObject } from "react";
 import { Breadcrumbs } from "../Breadcrumbs/Breadcrumbs";
 import { Button } from "../Button/Button";
 import { Icon } from "../Icon/Icon";
@@ -96,23 +96,41 @@ export const CollapsibleSidebar: Story = {
   },
 };
 
+function LargeTitleFrame({
+  children,
+}: {
+  children: (ref: RefObject<HTMLDivElement | null>) => ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  return (
+    <div ref={ref} className="h-96 overflow-y-auto rounded-card border border-separator">
+      {children(ref)}
+    </div>
+  );
+}
+
 export const LargeTitle: Story = {
   render: () => (
-    <div className="h-96 overflow-y-auto rounded-card border border-separator">
-      <NavigationBar
-        title="Courses"
-        back={{ href: "#home", label: "Home" }}
-        actions={<Button size="small">New</Button>}
-        accessory={<SearchField aria-label="Search courses" />}
-      />
-      <div className="mx-auto flex max-w-app flex-col gap-3 px-4 pb-8">
-        {Array.from({ length: 12 }, (_, i) => (
-          <p key={i} className="rounded-card bg-bg-secondary p-4">
-            Course {i + 1}
-          </p>
-        ))}
-      </div>
-    </div>
+    <LargeTitleFrame>
+      {(scrollRoot) => (
+        <>
+          <NavigationBar
+            scrollRoot={scrollRoot}
+            title="Courses"
+            back={{ href: "#home", label: "Home" }}
+            actions={<Button size="small">New</Button>}
+            accessory={<SearchField aria-label="Search courses" />}
+          />
+          <div className="mx-auto flex max-w-app flex-col gap-3 px-4 pb-8">
+            {Array.from({ length: 12 }, (_, i) => (
+              <p key={i} className="rounded-card bg-bg-secondary p-4">
+                Course {i + 1}
+              </p>
+            ))}
+          </div>
+        </>
+      )}
+    </LargeTitleFrame>
   ),
 };
 

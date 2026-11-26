@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Link as AriaLink } from "react-aria-components";
 import { cx } from "../../utils/cx";
 import { Icon } from "../Icon/Icon";
@@ -16,13 +16,25 @@ export interface NavigationBarProps {
   /** Content under the large title (search field, segmented control). */
   accessory?: ReactNode;
   className?: string;
+  /**
+   * The element that scrolls, when it is not the page (a sheet, a split-view pane, a story
+   * frame). Defaults to the viewport.
+   */
+  scrollRoot?: RefObject<HTMLElement | null>;
 }
 
 /**
  * Navigation bar with a collapsing large title. The large title is the page's h1; the inline title
  * in the bar is a visual duplicate, hidden from assistive technology.
  */
-export function NavigationBar({ title, back, actions, accessory, className }: NavigationBarProps) {
+export function NavigationBar({
+  title,
+  back,
+  actions,
+  accessory,
+  className,
+  scrollRoot,
+}: NavigationBarProps) {
   const sentinel = useRef<HTMLHeadingElement>(null);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -30,11 +42,12 @@ export function NavigationBar({ title, back, actions, accessory, className }: Na
     const el = sentinel.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
     const observer = new IntersectionObserver(([entry]) => setCollapsed(!entry!.isIntersecting), {
+      root: scrollRoot?.current ?? null,
       rootMargin: "-44px 0px 0px 0px",
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [scrollRoot]);
 
   return (
     // A header landmark keeps the bar, the h1 and the accessory inside a landmark (axe "region").

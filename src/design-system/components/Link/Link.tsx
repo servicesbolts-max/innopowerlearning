@@ -11,6 +11,11 @@ export interface LinkProps extends AriaLinkProps {
   variant?: "inline" | "standalone";
 }
 
+/**
+ * Text link. `className` is for layout (margins, display): base classes carry no shape or spacing,
+ * because caller classes are appended, not merged, so conflicting utilities would win by stylesheet
+ * order. Build pill-shaped navigation from `next/link` or a dedicated component instead.
+ */
 export function Link({ variant = "inline", className, ...props }: LinkProps) {
   return (
     <AriaLink
@@ -18,7 +23,7 @@ export function Link({ variant = "inline", className, ...props }: LinkProps) {
       className={withClass(
         className,
         cx(
-          "cursor-pointer rounded-sm text-accent-text underline-offset-2 focus-ring data-disabled:cursor-default data-disabled:opacity-40",
+          "cursor-pointer text-accent-text underline-offset-2 focus-ring data-disabled:cursor-default data-disabled:opacity-40",
           variant === "inline" ? "underline" : "data-hovered:underline",
         ),
       )}
