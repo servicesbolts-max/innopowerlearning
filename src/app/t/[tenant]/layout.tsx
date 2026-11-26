@@ -72,7 +72,14 @@ export default async function TenantLayout({
         <ToastProvider key={shell.id}>
           <ShellFrame skipLabel={t("skipToContent")}>
             <SiteHeader
-              brand={{ name: shell.name, monogram: shell.logo.text, href: "/" }}
+              brand={{
+                name: shell.name,
+                monogram: shell.logo.text,
+                href: "/",
+                logo: shell.logo.imageUrl
+                  ? { url: shell.logo.imageUrl, alt: shell.logo.imageAlt ?? "" }
+                  : undefined,
+              }}
               navLabel={t("nav.label")}
               items={[
                 { href: "/courses", label: t("nav.courses"), segment: "courses" },

@@ -21,6 +21,7 @@ export {
 export { featureFlagKey, flagsForPreset, PRESET_FLAGS, type FeatureFlagKey } from "./presets";
 export {
   cachedResolver,
+  CONSOLE_PREFIX,
   decideRoute,
   TENANT_ID_HEADER,
   TENANT_PREFIX,
@@ -29,3 +30,20 @@ export {
   type RouteInput,
   type TenantResolver,
 } from "./routing";
+export {
+  brandingSchema,
+  getBranding,
+  monogramText,
+  saveBranding,
+  type Branding,
+  type BrandingInput,
+} from "./branding";
+export {
+  inTenantAsPlatform,
+  listAllPartners,
+  listPartners,
+  provisionSchema,
+  provisionTenant,
+  type PartnerRow,
+  type ProvisionInput,
+} from "./provision";

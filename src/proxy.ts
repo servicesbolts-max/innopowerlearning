@@ -66,6 +66,12 @@ export async function proxy(request: NextRequest) {
       url.pathname = decision.pathname;
       return NextResponse.rewrite(url, { request: { headers } });
     }
+    case "console": {
+      // No tenant headers: the console belongs to the platform tenant (requestTenantId).
+      const url = request.nextUrl.clone();
+      url.pathname = decision.pathname;
+      return NextResponse.rewrite(url, { request: { headers } });
+    }
     case "not-found": {
       const url = request.nextUrl.clone();
       url.pathname = NOT_FOUND_PATH;

@@ -21,6 +21,12 @@ export const tenantLogoSchema = z.discriminatedUnion("kind", [
       .string()
       .trim()
       .regex(/^[\p{L}\p{N}]{1,3}$/u),
+    // Optional image logo (an https URL, MVP slice M6); the monogram stays the fallback.
+    imageUrl: z
+      .url({ protocol: /^https$/ })
+      .max(500)
+      .optional(),
+    imageAlt: z.string().trim().max(120).optional(),
   }),
 ]);
 export type TenantLogo = z.infer<typeof tenantLogoSchema>;

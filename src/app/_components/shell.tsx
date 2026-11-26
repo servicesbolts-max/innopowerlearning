@@ -19,7 +19,8 @@ export function SiteHeader({
   navLabel,
   account,
 }: {
-  brand: { name: string; monogram: string; href: string };
+  /** brand.logo is an optional https image chosen in Branding; the monogram is the fallback. */
+  brand: { name: string; monogram: string; href: string; logo?: { url: string; alt: string } };
   /** Primary links; mark one with `emphasis` for the call to action (Sign in). */
   items: NavLinkItem[];
   navLabel: string;
@@ -33,7 +34,18 @@ export function SiteHeader({
           href={brand.href}
           className="-ms-1 flex min-h-touch min-w-0 items-center gap-2 rounded-control px-1 text-headline focus-ring"
         >
-          <Monogram text={brand.monogram} size={32} />
+          {brand.logo ? (
+            // A partner-supplied URL of unknown size: a plain img, not the image optimizer.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={brand.logo.url}
+              alt=""
+              referrerPolicy="no-referrer"
+              className="h-8 w-auto max-w-32 object-contain"
+            />
+          ) : (
+            <Monogram text={brand.monogram} size={32} />
+          )}
           <span className="truncate">{brand.name}</span>
         </NextLink>
         <nav aria-label={navLabel} className="-mx-2 flex flex-wrap items-center">

@@ -236,7 +236,7 @@ describe("isolation: tenants (the tenant root, RLS on id)", () => {
     expect(Array.from(result as unknown as { id: string }[]).map((r) => r.id)).toEqual([A]);
   });
 
-  it("cannot create, rename or delete tenants", async () => {
+  it("cannot create or delete tenants, and may rename only itself (MVP branding)", async () => {
     await expectDbError(
       asA((tx) =>
         tx.execute(sql`insert into tenants (id, slug, name, kind, preset)
@@ -244,10 +244,21 @@ describe("isolation: tenants (the tenant root, RLS on id)", () => {
       ),
       /permission denied/,
     );
+    // Only the name column is writable, and only on the current tenant's row.
     await expectDbError(
-      asA((tx) => tx.execute(sql`update tenants set name = 'pwned'`)),
+      asA((tx) => tx.execute(sql`update tenants set slug = 'pwned'`)),
       /permission denied/,
     );
+    await expectDbError(
+      asA((tx) => tx.execute(sql`update tenants set status = 'active'`)),
+      /permission denied/,
+    );
+    expect(
+      countOf(
+        await asA((tx) => tx.execute(sql`update tenants set name = 'pwned' where id = ${B}`)),
+      ),
+    ).toBe(0);
+    await asA((tx) => tx.execute(sql`update tenants set name = name where id = ${A}`));
     await expectDbError(
       asA((tx) => tx.execute(sql`delete from tenants`)),
       /permission denied/,

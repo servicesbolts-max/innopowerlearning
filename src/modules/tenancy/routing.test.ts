@@ -83,8 +83,19 @@ describe("decideRoute: hub host", () => {
 });
 
 describe("decideRoute: other hosts", () => {
-  it("refuses the console (until P11) and malformed hosts", async () => {
-    expect(await route("console.localhost:3000", "/")).toEqual({ type: "not-found" });
+  it("serves the console on its own host only, and refuses malformed hosts", async () => {
+    expect(await route("console.localhost:3000", "/")).toEqual({
+      type: "console",
+      pathname: "/console",
+    });
+    expect(await route("console.localhost:3000", "/sign-in")).toEqual({
+      type: "console",
+      pathname: "/console/sign-in",
+    });
+    expect(await route("console.localhost:3000", "/t/lsetf")).toEqual({ type: "not-found" });
+    expect(await route("console.localhost:3000", "/console")).toEqual({ type: "not-found" });
+    expect(await route("console.localhost:3000", "/api/auth/session")).toEqual({ type: "next" });
+    expect(await route("localhost:3000", "/console")).toEqual({ type: "not-found" });
     expect(await route("a.b.localhost:3000", "/")).toEqual({ type: "not-found" });
     expect(await route("127.0.0.1:3000", "/")).toEqual({ type: "not-found" });
   });

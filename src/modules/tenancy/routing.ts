@@ -19,6 +19,8 @@ export type RouteDecision =
   | { type: "rewrite"; pathname: string; tenant: ResolvedTenant }
   /** A tenant-host API request: served by the root route handler, with the tenant attached. */
   | { type: "api"; tenant: ResolvedTenant }
+  /** The Super Admin Console host: pages under CONSOLE_PREFIX, no tenant headers (platform). */
+  | { type: "console"; pathname: string }
   | { type: "not-found" };
 
 /**
@@ -42,6 +44,7 @@ export type TenantResolver = (
 
 /** Internal prefix of tenant routes (src/app/t/[tenant]). */
 export const TENANT_PREFIX = "/t";
+export const CONSOLE_PREFIX = "/console";
 
 /** Hub pages a tenant host must not serve (tenants have their own `/` and `/sign-in`). */
 const HUB_ONLY_ON_TENANT = ["/design", "/partners", "/become-a-partner", "/library", "/legal"];
@@ -64,10 +67,20 @@ export async function decideRoute(
 
   switch (target.surface) {
     case "invalid":
-    case "console": // the Super Admin Console arrives in P11
       return NOT_FOUND;
 
+    case "console": {
+      if (PUBLIC_FILE.test(pathname)) return NEXT;
+      if (under(pathname, "/api")) return NEXT;
+      // Only the console pages: tenant and hub-only paths do not exist on this host.
+      if (under(pathname, TENANT_PREFIX) || under(pathname, CONSOLE_PREFIX)) return NOT_FOUND;
+      const rest = pathname === "/" ? "" : pathname;
+      return { type: "console", pathname: `${CONSOLE_PREFIX}${rest}` };
+    }
+
     case "hub": {
+      // The console is served on its own host only.
+      if (under(pathname, CONSOLE_PREFIX)) return NOT_FOUND;
       if (under(pathname, "/design")) {
         const [, , theme, ...rest] = pathname.split("/");
         return theme && isDemoTheme(theme) && rest.every((s) => s === "") ? NEXT : NOT_FOUND;

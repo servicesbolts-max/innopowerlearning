@@ -13,6 +13,9 @@ export interface ProjectFixtures {
   admin: { email: string; password: string };
   learner: { email: string; password: string };
   instructor: { email: string; password: string };
+  /** MVP admin dashboard and console tests (separate from the 2FA tests in auth.spec.ts). */
+  mvpAdmin: { email: string; password: string };
+  owner: { email: string; password: string };
   wapseaLearner: { email: string; password: string };
   invite: { token: string; email: string };
 }
@@ -89,6 +92,12 @@ export async function createAuthFixtures(): Promise<AuthFixtures> {
         await join(tx, lsetf, learner.id, "learner");
         const instructor = await createUser(tx, mail("instructor"), "E2E Instructor");
         await join(tx, lsetf, instructor.id, "instructor");
+        const mvpAdmin = await createUser(tx, mail("mvpadmin"), "E2E MVP Admin");
+        await join(tx, lsetf, mvpAdmin.id, "tenant_admin");
+        const owner = await createUser(tx, mail("owner"), "E2E Owner");
+        await tx`set local role app_auth`;
+        await tx`update users set platform_role = 'platform_owner' where id = ${owner.id}`;
+        await tx`reset role`;
         const wapseaLearner = await createUser(tx, mail("wapsea"), "E2E Wapsea Learner");
         await join(tx, wapsea, wapseaLearner.id, "learner");
 
@@ -103,6 +112,8 @@ export async function createAuthFixtures(): Promise<AuthFixtures> {
           admin: { email: mail("admin"), password: admin.password },
           learner: { email: mail("learner"), password: learner.password },
           instructor: { email: mail("instructor"), password: instructor.password },
+          mvpAdmin: { email: mail("mvpadmin"), password: mvpAdmin.password },
+          owner: { email: mail("owner"), password: owner.password },
           wapseaLearner: { email: mail("wapsea"), password: wapseaLearner.password },
           invite: { token, email: invitedEmail },
         } as ProjectFixtures;
@@ -123,6 +134,29 @@ export async function removeAuthFixtures(
     const [tenant] = await sql.begin(async (tx) => {
       await tx`set local role app_resolver`;
       return tx`select id from tenants where slug = ${fixtures.inviteTenantSlug}`;
+    });
+    // Partners the console test provisioned (slugs e2e-new-<runId>-...), with all their rows.
+    await sql.begin(async (tx) => {
+      await tx`set local role app_resolver`;
+      const made = await tx`select id from tenants where slug like ${`e2e-new-${fixtures.runId}%`}`;
+      await tx`reset role`;
+      for (const { id } of made) {
+        await tx`set local role app_auth`;
+        await tx`delete from sessions where tenant_id = ${id}`;
+        await tx`reset role`;
+        await tx`select set_config('app.tenant_id', ${id}, true)`;
+        for (const table of [
+          "audit_logs",
+          "invitations",
+          "memberships",
+          "feature_flags",
+          "tenant_settings",
+          "tenant_themes",
+        ]) {
+          await tx`delete from ${tx(table)} where tenant_id = ${id}`;
+        }
+        await tx`delete from tenants where id = ${id}`;
+      }
     });
     await sql.begin(async (tx) => {
       await tx`set local role app_auth`;

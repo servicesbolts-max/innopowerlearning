@@ -1,4 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
+import * as OTPAuth from "otpauth";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import type { AuthFixtures, ProjectFixtures } from "./fixtures/auth-fixtures";
 
@@ -11,6 +12,9 @@ const base = new URL(process.env.E2E_BASE_URL ?? `http://localhost:${process.env
 const at = (host: string, path = "/") => `${base.protocol}//${host}:${base.port}${path}`;
 const tenantHost = (slug: string) => `${slug}.${base.hostname}`;
 const LSETF = tenantHost("lsetf");
+
+// Sign-ins hash with Argon2: run these one at a time per device project, like auth.spec.ts.
+test.describe.configure({ mode: "serial" });
 
 const all = (): AuthFixtures => JSON.parse(process.env.E2E_AUTH_FIXTURES ?? "null");
 const mine = (info: TestInfo): ProjectFixtures => all().projects[info.project.name]!;
@@ -144,7 +148,88 @@ test.describe("instructor", () => {
 
   test("cannot open the people admin", async ({ page }, info) => {
     await signIn(page, LSETF, mine(info).instructor);
-    const res = await page.goto(at(LSETF, "/admin/people"));
-    expect(res?.status()).toBe(404);
+    await page.goto(at(LSETF, "/admin/people"));
+    // Refusals render the not-found page (see docs/ASSUMPTIONS.md: status 200 under PPR).
+    await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
+    await expect(page.getByLabel("Email address")).toHaveCount(0);
+  });
+});
+
+/** Turns on TOTP for the signed-in user from the account security page. */
+async function setUpTotp(page: Page, password: string): Promise<void> {
+  await page.getByRole("button", { name: "Turn on two-step verification" }).click();
+  await page.getByLabel("Confirm your password to continue").fill(password);
+  await page.getByRole("button", { name: "Turn on two-step verification" }).click();
+  const secret = (await page.getByTestId("totp-secret").textContent())!.trim();
+  const totp = new OTPAuth.TOTP({ secret: OTPAuth.Secret.fromBase32(secret) });
+  await page.getByLabel("Verification code").fill(totp.generate());
+  await page.getByRole("button", { name: "Confirm and turn on" }).click();
+  await expect(page.getByRole("heading", { name: "Your backup codes" })).toBeVisible({
+    timeout: 15_000,
+  });
+}
+
+test.describe("partner admin", () => {
+  test("sees the dashboard, invites a person and saves branding", async ({ page }, info) => {
+    test.setTimeout(120_000);
+    const { mvpAdmin, runId } = { ...mine(info), runId: all().runId };
+    await signIn(page, LSETF, mvpAdmin);
+    await page.goto(at(LSETF, "/admin"));
+    await expect(page).toHaveURL(/\/account\/security/);
+    await setUpTotp(page, mvpAdmin.password);
+
+    await page.goto(at(LSETF, "/admin"));
+    await expect(page.getByRole("heading", { level: 1, name: "LSETF admin" })).toBeVisible();
+    await expect(page.getByText("Published courses")).toBeVisible();
+    await expectNoAxeViolations(page);
+
+    await page.getByRole("link", { name: "People" }).click();
+    const invitee = `invitee-${info.project.name}-${runId}@e2e.test`;
+    await page.getByLabel("Email address").fill(invitee);
+    await page.getByRole("button", { name: "Send invitation" }).click();
+    await expect(page.getByText("Invitation sent")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(invitee)).toBeVisible();
+
+    await page.getByRole("link", { name: "Branding" }).click();
+    await expect(page.getByLabel("Organization name")).toHaveValue("LSETF");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Branding saved")).toBeVisible({ timeout: 15_000 });
+  });
+});
+
+test.describe("super admin console", () => {
+  test("lists partners and creates a new one", async ({ page }, info) => {
+    test.setTimeout(120_000);
+    const { owner } = mine(info);
+    const CONSOLE = tenantHost("console");
+    await page.goto(at(CONSOLE, "/"));
+    await expect(page).toHaveURL(/\/sign-in/);
+    await signIn(page, CONSOLE, owner);
+    await page.goto(at(CONSOLE, "/"));
+    await expect(page).toHaveURL(/\/account\/security/);
+    await setUpTotp(page, owner.password);
+
+    await page.goto(at(CONSOLE, "/"));
+    await expect(page.getByRole("heading", { level: 1, name: "Partners" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /LSETF/ })).toBeVisible();
+    await expectNoAxeViolations(page);
+
+    const slug = `e2e-new-${all().runId}-${info.project.name.slice(0, 1)}`;
+    await page.getByLabel("Name").fill(`E2E Partner ${info.project.name}`);
+    await page.getByLabel("Subdomain").fill(slug);
+    await page.getByLabel("First admin's email address").fill(`first-${slug}@e2e.test`);
+    await page.getByRole("button", { name: "Create partner" }).click();
+    await expect(page.getByText("Partner created.")).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.getByRole("link", { name: new RegExp(`E2E Partner ${info.project.name}`) }),
+    ).toBeVisible();
+
+    // The new partner's space is live at once.
+    await page.goto(at(tenantHost(slug), "/"));
+    await expect(
+      page.getByRole("heading", { level: 1, name: `E2E Partner ${info.project.name}` }),
+    ).toBeVisible({
+      timeout: 15_000,
+    });
   });
 });

@@ -750,7 +750,12 @@
       },
       "signIn": "Sign in to the console",
       "signInBody": "For Innopower platform staff.",
-      "notStaff": "This account has no console access."
+      "notStaff": "This account has no console access.",
+      "statuses": {
+        "active": "Active",
+        "suspended": "Suspended",
+        "archived": "Archived"
+      }
     }
   }
 }
