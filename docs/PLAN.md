@@ -1,5 +1,26 @@
 # Work plan
 
+## MVP track (current)
+
+The owner asked for a working platform first, built in one pass with a lighter process than `docs/MASTER_PROMPT.md` Section 1.2. Per slice: implement, add focused tests (unit, one isolation test per new tenant table, one E2E happy path), run `pnpm gate` and the integration tests, and commit. Screenshots only for the catalog, the player and the admin dashboard (390 and 1280 px, light). One review pass (`tenant-isolation-auditor`, `security-reviewer`) after slice M7, then the tag `mvp-1`. Every slice is tenant-scoped with the existing patterns: `withTenant`, `defineAction` (`can()`, Zod, audit), design tokens, next-intl strings.
+
+| Done | Slice                 | Scope                                                                                                                                 |
+| ---- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| [ ]  | M1 Courses            | Optional categories; course, sections, lessons (sanitized rich text, YouTube/Vimeo embed, PDF link); draft/published; up/down reorder |
+| [ ]  | M2 Catalog            | Catalog with search, course page, enrollment modes open and invite-only                                                               |
+| [ ]  | M3 Learner            | My learning, lesson player with outline, mark complete, resume last lesson, progress %                                                |
+| [ ]  | M4 Quiz lessons       | Single and multiple choice, pass mark, attempts recorded                                                                              |
+| [ ]  | M5 Certificates       | Certificate on course completion: HTML certificate page and public `/verify/[code]`                                                   |
+| [ ]  | M6 Partner Admin      | `/admin`: dashboard counts, people list and invite, courses list, branding (name, accent via the theme engine, logo URL)              |
+| [ ]  | M7 Super Admin        | `console.{ROOT_DOMAIN}`: list partners, create-partner form (slug, name, preset, accent, first admin invite)                          |
+| [ ]  | Seed, review, `mvp-1` | One sample course per seeded tenant (placeholder copy); isolation and security review; PROGRESS; tag `mvp-1`                          |
+
+Out of scope for the MVP: payments, AI, community, live sessions, programs and applications, the Site Builder (a fixed branded homepage stays), reports, offline PWA, SCORM, PDF generation, drag-and-drop and course versioning.
+
+## Post-MVP roadmap
+
+The package plan below stays as the roadmap after `mvp-1`. The MVP covers parts of P4a, P4c, P4d, P5a, P6, P10a and P11a; those packages pick up from what the MVP built.
+
 Mirrors Section 15 of `docs/MASTER_PROMPT.md`. One package per session (`/phase <id>`). A box is ticked only when acceptance evidence was shown in the session, the reviewers are clean, the work is committed, and `wp-<id>-done` is tagged.
 
 | Done | Package                               | Scope                                                                                                                                                         | Read             | Acceptance                                                                                                                        |

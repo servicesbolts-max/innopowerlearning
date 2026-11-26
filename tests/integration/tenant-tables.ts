@@ -85,4 +85,40 @@ export const TENANT_TABLES: TenantTableFixture[] = [
     table: "audit_logs",
     row: (tenantId, id) => ({ tenant_id: tenantId, id, action: "test.event", metadata: {} }),
   },
+  {
+    table: "course_categories",
+    row: (tenantId, id) => ({ tenant_id: tenantId, id, name: `Category ${id.slice(-8)}` }),
+  },
+  {
+    table: "courses",
+    row: (tenantId, id, own) => ({
+      tenant_id: tenantId,
+      id,
+      slug: `course-${id.slice(-8)}`,
+      title: "Fixture course",
+      category_id: own.course_categories,
+    }),
+    crossTenantFk: { column: "category_id", parent: "course_categories" },
+  },
+  {
+    table: "course_sections",
+    row: (tenantId, id, own) => ({
+      tenant_id: tenantId,
+      id,
+      course_id: own.courses,
+      title: "Section",
+    }),
+    crossTenantFk: { column: "course_id", parent: "courses" },
+  },
+  {
+    table: "lessons",
+    row: (tenantId, id, own) => ({
+      tenant_id: tenantId,
+      id,
+      course_id: own.courses,
+      section_id: own.course_sections,
+      title: "Lesson",
+    }),
+    crossTenantFk: { column: "section_id", parent: "course_sections" },
+  },
 ];

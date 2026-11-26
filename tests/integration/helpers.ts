@@ -50,6 +50,10 @@ export async function createTenants(owner: postgres.Sql, list: FixtureTenant[]) 
 }
 
 const CHILD_TABLES = [
+  "lessons",
+  "course_sections",
+  "courses",
+  "course_categories",
   "audit_logs",
   "invitations",
   "memberships",
