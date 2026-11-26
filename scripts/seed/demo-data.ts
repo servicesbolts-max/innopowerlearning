@@ -182,3 +182,65 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     role: "sponsor_viewer",
   },
 ];
+
+/**
+ * One sample course per tenant (MVP). Generic placeholder copy only: no claims about the real
+ * organizations. Bodies use the lesson Markdown subset (src/modules/courses/content.ts).
+ */
+export const DEMO_COURSE = {
+  slug: "sample-learning-online",
+  title: "Sample course: Learning online",
+  summary:
+    "Placeholder copy: a short sample course that shows lessons, progress, a quiz and a certificate.",
+  category: "Getting started",
+  sections: [
+    {
+      title: "Welcome",
+      lessons: [
+        {
+          title: "How this course works",
+          body: "## Welcome\n\nThis is placeholder copy for a sample lesson. Read each lesson, then select **Mark as complete** to record your progress.\n\n- Lessons can include text, a video and a PDF link.\n- Your progress is saved, so you can continue later.\n- Finish every lesson to earn a certificate.",
+        },
+        {
+          title: "Study habits",
+          body: "## Small steps\n\nPlaceholder copy: set aside a regular time to learn, take short notes, and review them at the end of each week.\n\n1. Pick a time.\n2. Remove distractions.\n3. Review what you learned.",
+        },
+      ],
+    },
+    {
+      title: "Check your understanding",
+      lessons: [
+        {
+          title: "Quick quiz",
+          body: "Answer both questions. You need 50% to pass, and you can try again.",
+          quiz: {
+            passMark: 50,
+            questions: [
+              {
+                id: "q1",
+                prompt: "How do you record progress on a lesson?",
+                kind: "single",
+                options: [
+                  { id: "a", text: "Select Mark as complete" },
+                  { id: "b", text: "Close the browser" },
+                ],
+                correct: ["a"],
+              },
+              {
+                id: "q2",
+                prompt: "Which of these help you study? Choose all that apply.",
+                kind: "multiple",
+                options: [
+                  { id: "a", text: "A regular time" },
+                  { id: "b", text: "Short notes" },
+                  { id: "c", text: "Skipping reviews" },
+                ],
+                correct: ["a", "b"],
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+} as const;

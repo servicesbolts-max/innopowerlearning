@@ -197,7 +197,7 @@ async function sectionInCourse(tx: TenantTx, courseId: string, sectionId: string
 
 export async function lessonInCourse(tx: TenantTx, courseId: string, lessonId: string) {
   const [row] = await tx
-    .select({ id: lessons.id, sectionId: lessons.sectionId })
+    .select({ id: lessons.id, sectionId: lessons.sectionId, kind: lessons.kind })
     .from(lessons)
     .where(
       and(eq(lessons.id, lessonId), eq(lessons.courseId, courseId), isNull(lessons.deletedAt)),

@@ -17,6 +17,7 @@ import {
   removeSectionAction,
   renameSectionAction,
   setCourseStatusAction,
+  enrollMemberAction,
   updateCourseAction,
 } from "../actions";
 import { CourseFields } from "../course-fields";
@@ -246,21 +247,44 @@ export default async function CourseEditorPage({ params }: Props) {
             <Button type="submit">{t("authoring.addSection")}</Button>
           </ActionForm>
         </section>
-        <Card as="section" className="flex flex-col gap-3 self-start">
-          <h2 className="text-title3">{t("authoring.details")}</h2>
-          <ActionForm action={updateCourseAction} successMessage={t("common.saved")}>
-            <Hidden values={{ courseId }} />
-            <CourseFields
-              defaults={{
-                title: course.title,
-                summary: course.summary,
-                category: course.category,
-                enrollmentMode: course.enrollmentMode,
-              }}
-            />
-            <Button type="submit">{t("common.save")}</Button>
-          </ActionForm>
-        </Card>
+        <div className="flex flex-col gap-6 self-start">
+          <Card as="section" className="flex flex-col gap-3">
+            <h2 className="text-title3">{t("authoring.details")}</h2>
+            <ActionForm action={updateCourseAction} successMessage={t("common.saved")}>
+              <Hidden values={{ courseId }} />
+              <CourseFields
+                defaults={{
+                  title: course.title,
+                  summary: course.summary,
+                  category: course.category,
+                  enrollmentMode: course.enrollmentMode,
+                }}
+              />
+              <Button type="submit">{t("common.save")}</Button>
+            </ActionForm>
+          </Card>
+          <Card as="section" className="flex flex-col gap-3">
+            <h2 className="text-title3">{t("catalog.enrollmentFor")}</h2>
+            <ActionForm
+              action={enrollMemberAction}
+              resetOnSuccess
+              successMessage={t("catalog.enrolledLearner")}
+            >
+              <Hidden values={{ courseId }} />
+              <TextField
+                name="email"
+                type="email"
+                label={t("catalog.enrollEmail")}
+                description={t("catalog.enrollEmailHelp")}
+                isRequired
+                maxLength={320}
+              />
+              <Button type="submit" variant="tinted">
+                {t("catalog.enrollLearner")}
+              </Button>
+            </ActionForm>
+          </Card>
+        </div>
       </div>
     </AdminFrame>
   );

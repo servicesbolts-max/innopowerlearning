@@ -76,6 +76,7 @@ export default async function TenantLayout({
               navLabel={t("nav.label")}
               items={[
                 { href: "/courses", label: t("nav.courses"), segment: "courses" },
+                { href: "/learn", label: t("nav.learn"), segment: "learn" },
                 { href: "/programs", label: t("nav.programs"), segment: "programs" },
               ]}
               account={<AccountNav />}

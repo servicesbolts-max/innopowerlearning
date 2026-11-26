@@ -121,4 +121,52 @@ export const TENANT_TABLES: TenantTableFixture[] = [
     }),
     crossTenantFk: { column: "section_id", parent: "course_sections" },
   },
+  {
+    table: "enrollments",
+    row: (tenantId, id, own) => ({
+      tenant_id: tenantId,
+      id,
+      course_id: own.courses,
+      user_id: own.user,
+    }),
+    crossTenantFk: { column: "course_id", parent: "courses" },
+  },
+  {
+    table: "lesson_progress",
+    row: (tenantId, id, own) => ({
+      tenant_id: tenantId,
+      id,
+      enrollment_id: own.enrollments,
+      lesson_id: own.lessons,
+    }),
+    crossTenantFk: { column: "lesson_id", parent: "lessons" },
+  },
+  {
+    table: "quiz_attempts",
+    row: (tenantId, id, own) => ({
+      tenant_id: tenantId,
+      id,
+      enrollment_id: own.enrollments,
+      lesson_id: own.lessons,
+      answers: {},
+      score: 0,
+      passed: false,
+    }),
+    // Append-only (no UPDATE grant), so check 5 cannot probe by update; courses.test.ts
+    // proves the composite foreign key with a cross-tenant insert instead.
+  },
+  {
+    table: "certificates",
+    row: (tenantId, id, own) => ({
+      tenant_id: tenantId,
+      id,
+      enrollment_id: own.enrollments,
+      course_id: own.courses,
+      user_id: own.user,
+      code: "ABCDEFGHJKMN",
+      recipient_name: "Fixture",
+      course_title: "Fixture course",
+    }),
+    crossTenantFk: { column: "course_id", parent: "courses" },
+  },
 ];

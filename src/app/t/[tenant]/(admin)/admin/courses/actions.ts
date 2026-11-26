@@ -8,6 +8,8 @@ import {
   courseInputSchema,
   courseOwner,
   createCourse,
+  enroll,
+  memberIdByEmail,
   lessonInputSchema,
   moveLesson,
   moveSection,
@@ -216,5 +218,24 @@ export const moveLessonAction = defineAction(
   async ({ tx, input }) => {
     await moveLesson(tx, input.courseId, input.lessonId, input.direction);
     return null;
+  },
+);
+
+/** Course staff enroll a member (the way into invite-only courses). */
+export const enrollMemberAction = defineAction(
+  {
+    schema: z.object({ courseId, email: z.email().max(320) }),
+    permission: "course.edit",
+    resource: ownerOf,
+    audit: (i, r: { id: string; created: boolean }) => ({
+      action: "enrollment.created_by_staff",
+      target: { type: "enrollment", id: r.id },
+      metadata: { courseId: i.courseId, created: r.created },
+    }),
+  },
+  async ({ tx, input, actor }) => {
+    const userId = await memberIdByEmail(tx, input.email);
+    if (!userId) throw new ActionFailure("not_found");
+    return enroll(tx, actor.tenantId, input.courseId, userId, actor.userId);
   },
 );

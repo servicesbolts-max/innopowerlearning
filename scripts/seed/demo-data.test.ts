@@ -49,3 +49,16 @@ describe("demo seed data", () => {
     for (const t of partners) expect(t.tagline, t.slug).toMatch(/^Placeholder copy:/);
   });
 });
+
+describe("sample course", () => {
+  it("has valid quizzes and lesson text without markup", async () => {
+    const { quizSchema } = await import("../../src/modules/courses");
+    const { DEMO_COURSE } = await import("./demo-data");
+    for (const section of DEMO_COURSE.sections) {
+      for (const lesson of section.lessons) {
+        expect(lesson.body).not.toMatch(/[<>]/);
+        if ("quiz" in lesson) expect(quizSchema.safeParse(lesson.quiz).success).toBe(true);
+      }
+    }
+  });
+});

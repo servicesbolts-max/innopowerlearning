@@ -539,7 +539,8 @@
       "second_factor_required": "Set up two-step verification first.",
       "invalid_input": "Check the highlighted details and try again.",
       "forbidden": "You don't have permission to do that.",
-      "conflict": "That already exists. Choose another value."
+      "conflict": "That already exists. Choose another value.",
+      "not_found": "We couldn’t find that. Check the details and try again."
     },
     "common": {
       "save": "Save",
@@ -676,7 +677,8 @@
       "enrollEmail": "Learner's email address",
       "enrollLearner": "Enroll learner",
       "enrolledLearner": "Learner enrolled",
-      "notMember": "No member with that email address. Invite them from People first."
+      "notMember": "No member with that email address. Invite them from People first.",
+      "enrollEmailHelp": "They must already be a member. Invite new people from People first."
     },
     "learn": {
       "title": "My learning",

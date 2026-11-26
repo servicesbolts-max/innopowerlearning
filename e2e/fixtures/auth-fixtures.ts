@@ -12,6 +12,7 @@ import { hashPassword } from "../../src/modules/auth/password";
 export interface ProjectFixtures {
   admin: { email: string; password: string };
   learner: { email: string; password: string };
+  instructor: { email: string; password: string };
   wapseaLearner: { email: string; password: string };
   invite: { token: string; email: string };
 }
@@ -86,6 +87,8 @@ export async function createAuthFixtures(): Promise<AuthFixtures> {
         await join(tx, lsetf, admin.id, "tenant_admin");
         const learner = await createUser(tx, mail("learner"), "E2E Learner");
         await join(tx, lsetf, learner.id, "learner");
+        const instructor = await createUser(tx, mail("instructor"), "E2E Instructor");
+        await join(tx, lsetf, instructor.id, "instructor");
         const wapseaLearner = await createUser(tx, mail("wapsea"), "E2E Wapsea Learner");
         await join(tx, wapsea, wapseaLearner.id, "learner");
 
@@ -99,6 +102,7 @@ export async function createAuthFixtures(): Promise<AuthFixtures> {
         return {
           admin: { email: mail("admin"), password: admin.password },
           learner: { email: mail("learner"), password: learner.password },
+          instructor: { email: mail("instructor"), password: instructor.password },
           wapseaLearner: { email: mail("wapsea"), password: wapseaLearner.password },
           invite: { token, email: invitedEmail },
         } as ProjectFixtures;
@@ -132,6 +136,22 @@ export async function removeAuthFixtures(
           const [row] = await tx`select id from tenants where slug = ${t}`;
           if (!row) continue;
           await tx`select set_config('app.tenant_id', ${row.id}, true)`;
+          // Learning rows (MVP): the user's own, then courses the user authored.
+          await tx`delete from certificates where user_id = ${id}`;
+          await tx`delete from quiz_attempts where enrollment_id in
+                     (select id from enrollments where user_id = ${id})`;
+          await tx`delete from lesson_progress where enrollment_id in
+                     (select id from enrollments where user_id = ${id})`;
+          await tx`delete from enrollments where user_id = ${id}`;
+          await tx`delete from certificates where course_id in (select id from courses where owner_id = ${id})`;
+          await tx`delete from quiz_attempts where lesson_id in
+                     (select id from lessons where course_id in (select id from courses where owner_id = ${id}))`;
+          await tx`delete from lesson_progress where lesson_id in
+                     (select id from lessons where course_id in (select id from courses where owner_id = ${id}))`;
+          await tx`delete from enrollments where course_id in (select id from courses where owner_id = ${id})`;
+          await tx`delete from lessons where course_id in (select id from courses where owner_id = ${id})`;
+          await tx`delete from course_sections where course_id in (select id from courses where owner_id = ${id})`;
+          await tx`delete from courses where owner_id = ${id}`;
           await tx`delete from invitations where created_by = ${id} or accepted_by = ${id}`;
           await tx`delete from memberships where user_id = ${id}`;
         }

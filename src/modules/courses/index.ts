@@ -51,3 +51,18 @@ export {
   type OutlineLesson,
   type OutlineSection,
 } from "./queries";
+export {
+  completeLesson,
+  enroll,
+  enrollableCourse,
+  findEnrollment,
+  getEnrollment,
+  learningCounts,
+  listMyLearning,
+  loadPlayer,
+  memberIdByEmail,
+  resumeLesson,
+  type Enrollment,
+  type LearningItem,
+  type PlayerState,
+} from "./learning";

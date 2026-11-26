@@ -1,4 +1,14 @@
-import { integer, jsonb, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  integer,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 /** Drizzle mirror of src/db/migrations/0007_courses.sql and later learning tables. */
 const ts = (name: string) => timestamp(name, { withTimezone: true });
@@ -75,4 +85,71 @@ export const lessons = pgTable(
     ...audit,
   },
   (t) => [primaryKey({ columns: [t.tenantId, t.id] })],
+);
+
+export const enrollments = pgTable(
+  "enrollments",
+  {
+    tenantId: uuid("tenant_id").notNull(),
+    id: uuid("id").notNull(),
+    courseId: uuid("course_id").notNull(),
+    userId: uuid("user_id").notNull(),
+    status: text("status", { enum: ["active", "completed"] }).notNull(),
+    lastLessonId: uuid("last_lesson_id"),
+    completedAt: ts("completed_at"),
+    ...audit,
+  },
+  (t) => [
+    primaryKey({ columns: [t.tenantId, t.id] }),
+    unique().on(t.tenantId, t.courseId, t.userId),
+  ],
+);
+
+export const lessonProgress = pgTable(
+  "lesson_progress",
+  {
+    tenantId: uuid("tenant_id").notNull(),
+    id: uuid("id").notNull(),
+    enrollmentId: uuid("enrollment_id").notNull(),
+    lessonId: uuid("lesson_id").notNull(),
+    completedAt: ts("completed_at").notNull().defaultNow(),
+    ...audit,
+  },
+  (t) => [
+    primaryKey({ columns: [t.tenantId, t.id] }),
+    unique().on(t.tenantId, t.enrollmentId, t.lessonId),
+  ],
+);
+
+export const quizAttempts = pgTable(
+  "quiz_attempts",
+  {
+    tenantId: uuid("tenant_id").notNull(),
+    id: uuid("id").notNull(),
+    enrollmentId: uuid("enrollment_id").notNull(),
+    lessonId: uuid("lesson_id").notNull(),
+    answers: jsonb("answers").notNull(),
+    score: integer("score").notNull(),
+    passed: boolean("passed").notNull(),
+    ...audit,
+  },
+  (t) => [primaryKey({ columns: [t.tenantId, t.id] })],
+);
+
+export const certificates = pgTable(
+  "certificates",
+  {
+    tenantId: uuid("tenant_id").notNull(),
+    id: uuid("id").notNull(),
+    enrollmentId: uuid("enrollment_id").notNull(),
+    courseId: uuid("course_id").notNull(),
+    userId: uuid("user_id").notNull(),
+    code: text("code").notNull(),
+    recipientName: text("recipient_name").notNull(),
+    courseTitle: text("course_title").notNull(),
+    issuedAt: ts("issued_at").notNull().defaultNow(),
+    revokedAt: ts("revoked_at"),
+    ...audit,
+  },
+  (t) => [primaryKey({ columns: [t.tenantId, t.id] }), unique().on(t.tenantId, t.enrollmentId)],
 );

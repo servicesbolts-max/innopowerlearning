@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import type postgres from "postgres";
 import { uuidv7 } from "../../src/lib/ids";
 import { hashPassword } from "../../src/modules/auth/password";
-import { DEMO_ACCOUNTS, DEMO_PLANS, DEMO_TENANTS } from "./demo-data";
+import { DEMO_ACCOUNTS, DEMO_COURSE, DEMO_PLANS, DEMO_TENANTS } from "./demo-data";
 
 export interface SeedSummary {
   plans: number;
@@ -81,6 +81,7 @@ export async function seedDemo(
     // Demo accounts (Section 11): identity rows as app_auth, memberships per tenant. Existing
     // accounts are left alone, so their passwords never change and are never printed again.
     const tenantIds = new Map(summary.tenants.map((t) => [t.slug, t.id]));
+    const userIds = new Map<string, string>();
     for (const account of DEMO_ACCOUNTS) {
       await tx`set local role app_auth`;
       const [existing] = await tx<
@@ -114,12 +115,44 @@ export async function seedDemo(
         });
       }
       await tx`reset role`;
+      userIds.set(account.email, userId);
       if (account.role) {
         const tenantId = tenantIds.get(account.tenant)!;
         await tx`select set_config('app.tenant_id', ${tenantId}, true)`;
         await tx`insert into memberships (tenant_id, id, user_id, role, status)
           values (${tenantId}, ${uuidv7()}, ${userId}, ${account.role}, 'active')
           on conflict (tenant_id, user_id) do nothing`;
+      }
+    }
+    // One published sample course per tenant, created once (by slug) and never overwritten.
+    for (const t of summary.tenants) {
+      await tx`select set_config('app.tenant_id', ${t.id}, true)`;
+      const [existingCourse] = await tx<{ id: string }[]>`
+        select id from courses where tenant_id = ${t.id} and slug = ${DEMO_COURSE.slug}`;
+      if (existingCourse) continue;
+      const ownerId = userIds.get(`instructor.${t.slug}@demo.test`) ?? null;
+      const [category] = await tx<{ id: string }[]>`
+        insert into course_categories (tenant_id, id, name)
+        values (${t.id}, ${uuidv7()}, ${DEMO_COURSE.category})
+        on conflict (tenant_id, name) do update set deleted_at = null
+        returning id`;
+      const courseId = uuidv7();
+      await tx`insert into courses (tenant_id, id, slug, title, summary, category_id, status,
+                                    enrollment_mode, owner_id, published_at)
+        values (${t.id}, ${courseId}, ${DEMO_COURSE.slug}, ${DEMO_COURSE.title},
+                ${DEMO_COURSE.summary}, ${category!.id}, 'published', 'open', ${ownerId}, now())`;
+      for (const [sp, section] of DEMO_COURSE.sections.entries()) {
+        const sectionId = uuidv7();
+        await tx`insert into course_sections (tenant_id, id, course_id, title, position)
+          values (${t.id}, ${sectionId}, ${courseId}, ${section.title}, ${sp})`;
+        for (const [lp, lesson] of section.lessons.entries()) {
+          const quiz = "quiz" in lesson ? lesson.quiz : null;
+          await tx`insert into lessons (tenant_id, id, course_id, section_id, title, kind, body,
+                                        quiz, position)
+            values (${t.id}, ${uuidv7()}, ${courseId}, ${sectionId}, ${lesson.title},
+                    ${quiz ? "quiz" : "content"}, ${lesson.body},
+                    ${quiz ? tx.json(quiz as unknown as postgres.JSONValue) : null}, ${lp})`;
+        }
       }
     }
     await tx`select set_config('app.tenant_id', '', true)`;

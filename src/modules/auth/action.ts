@@ -14,7 +14,12 @@ import { currentTenantId, getTenantSession, type TenantSession } from "./session
  * Returns a serializable result; never throws for expected failures.
  */
 export type ActionError =
-  "unauthenticated" | "second_factor_required" | "invalid_input" | "forbidden" | "conflict";
+  | "unauthenticated"
+  | "second_factor_required"
+  | "invalid_input"
+  | "forbidden"
+  | "conflict"
+  | "not_found";
 
 export type ActionResult<T> =
   { ok: true; data: T } | { ok: false; error: ActionError; issues?: Record<string, string[]> };
