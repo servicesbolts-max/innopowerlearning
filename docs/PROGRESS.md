@@ -1,8 +1,25 @@
 # Progress
 
-Current package: **P4a Course schema and authoring** (not started). Start it in a fresh session with `/phase P4a`.
+Current state: **MVP track done, tag `mvp-1`** (docs/PLAN.md, MVP track). Next: run the MVP E2E (below), then pick up the post-MVP roadmap from P4a.
 
 ## Log
+
+- **MVP M1-M7: done 2026-11-27, tag `mvp-1`.** Built in one pass with the lighter process the owner asked for.
+  - Commits: `8e8e430` (design-system fixes), `2f820a6` (M1 authoring), `829940b` (M2-M5 catalog, enrollment, player, quizzes, certificates), `b1d2a6f` (M6-M7 Partner Admin and Console), `38f6723` (review fixes).
+  - Schema: `0007`-`0010` (course_categories, courses, course_sections, lessons, enrollments, lesson_progress, quiz_attempts, certificates), `0011` (tenant rename, app_platform provisioning grants), `0012` (app_platform limited to the tenant being created).
+  - Tenant routes: `/courses?q=`, `/courses/[slug]`, `/learn`, `/learn/[slug]/[lessonId]`, `/verify/[code]`, `/admin`, `/admin/people`, `/admin/courses` (+ editor, lesson editor), `/admin/branding`. Console: `console.{ROOT_DOMAIN}` (sign-in, account security, partners, create partner).
+  - Seed: one published sample course per tenant (`sample-learning-online`).
+  - Evidence:
+    - Gate: 1628 unit tests, build green.
+    - Integration: 188 passed, 8 skipped. The isolation checks cover every new table; there are also authoring, learning flow, quiz cap, branding, people and provisioning tests.
+  - Not run, so unverified:
+    - **E2E (`e2e/mvp.spec.ts`, updated `e2e/tenancy.spec.ts`).** This session could not load `.env`/`.env.example` for the Playwright fixtures: a project hook and the shell guard block it. Run it as described below.
+    - **Screenshots** of the catalog, player and admin dashboard. They need the same signed-in fixtures.
+  - Reviews: isolation found 1 medium and 1 low, both fixed. Security found 1 medium (fixed) and 4 lows: 1 fixed, 3 deferred and listed in ASSUMPTIONS.
+- **Run the MVP E2E:**
+  1. Load the env and build with `ROOT_DOMAIN=localhost:3100` and a throwaway `BETTER_AUTH_SECRET`.
+  2. Start the server with `node node_modules/next/dist/bin/next start --port 3100`. Keep Mailpit running.
+  3. Run `E2E_BASE_URL=http://localhost:3100 PORT=3100 pnpm e2e`.
 
 - **P0 Foundation: done 2026-11-20, tag `wp-P0-done`.** Next.js 16.4, TS 6, Tailwind 4.3, Postgres 17 with RLS roles (`app_login`), checksummed migrations, CI, hooks and skills.
 - **P1 Design system: done 2026-11-20, tag `wp-P1-done`.** Theme engine with WCAG contrast correction, 68 DS exports on React Aria, Storybook, the `/design/[theme]` showcase, and skill `/add-ds-component`.

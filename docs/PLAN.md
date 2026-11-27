@@ -6,14 +6,14 @@ The owner asked for a working platform first, built in one pass with a lighter p
 
 | Done | Slice                 | Scope                                                                                                                                 |
 | ---- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| [ ]  | M1 Courses            | Optional categories; course, sections, lessons (sanitized rich text, YouTube/Vimeo embed, PDF link); draft/published; up/down reorder |
-| [ ]  | M2 Catalog            | Catalog with search, course page, enrollment modes open and invite-only                                                               |
-| [ ]  | M3 Learner            | My learning, lesson player with outline, mark complete, resume last lesson, progress %                                                |
-| [ ]  | M4 Quiz lessons       | Single and multiple choice, pass mark, attempts recorded                                                                              |
-| [ ]  | M5 Certificates       | Certificate on course completion: HTML certificate page and public `/verify/[code]`                                                   |
-| [ ]  | M6 Partner Admin      | `/admin`: dashboard counts, people list and invite, courses list, branding (name, accent via the theme engine, logo URL)              |
-| [ ]  | M7 Super Admin        | `console.{ROOT_DOMAIN}`: list partners, create-partner form (slug, name, preset, accent, first admin invite)                          |
-| [ ]  | Seed, review, `mvp-1` | One sample course per seeded tenant (placeholder copy); isolation and security review; PROGRESS; tag `mvp-1`                          |
+| [x]  | M1 Courses            | Optional categories; course, sections, lessons (sanitized rich text, YouTube/Vimeo embed, PDF link); draft/published; up/down reorder |
+| [x]  | M2 Catalog            | Catalog with search, course page, enrollment modes open and invite-only                                                               |
+| [x]  | M3 Learner            | My learning, lesson player with outline, mark complete, resume last lesson, progress %                                                |
+| [x]  | M4 Quiz lessons       | Single and multiple choice, pass mark, attempts recorded                                                                              |
+| [x]  | M5 Certificates       | Certificate on course completion: HTML certificate page and public `/verify/[code]`                                                   |
+| [x]  | M6 Partner Admin      | `/admin`: dashboard counts, people list and invite, courses list, branding (name, accent via the theme engine, logo URL)              |
+| [x]  | M7 Super Admin        | `console.{ROOT_DOMAIN}`: list partners, create-partner form (slug, name, preset, accent, first admin invite)                          |
+| [x]  | Seed, review, `mvp-1` | One sample course per seeded tenant (placeholder copy); isolation and security review; PROGRESS; tag `mvp-1`                          |
 
 Out of scope for the MVP: payments, AI, community, live sessions, programs and applications, the Site Builder (a fixed branded homepage stays), reports, offline PWA, SCORM, PDF generation, drag-and-drop and course versioning.
 
