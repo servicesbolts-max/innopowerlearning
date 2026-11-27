@@ -19,7 +19,8 @@ export type ActionError =
   | "invalid_input"
   | "forbidden"
   | "conflict"
-  | "not_found";
+  | "not_found"
+  | "limit_reached";
 
 export type ActionResult<T> =
   { ok: true; data: T } | { ok: false; error: ActionError; issues?: Record<string, string[]> };

@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { runMigrations, setRuntimeLoginPassword } from "@/db/migrate";
 import { uuidv7 } from "@/lib/ids";
@@ -301,5 +302,19 @@ describe("quiz attempts", () => {
         }),
       ),
     ).rejects.toThrow();
+  });
+});
+
+describe("quiz attempt cap", () => {
+  it("counts attempts per enrollment and quiz", async () => {
+    const { countAttempts, QUIZ_MAX_ATTEMPTS } = await import("@/modules/assessments");
+    expect(QUIZ_MAX_ATTEMPTS).toBe(5);
+    const n = await withTenant({ tenantId: A }, async (tx) => {
+      const [row] = await tx.execute<{ enrollment_id: string; lesson_id: string }>(
+        sql`select enrollment_id, lesson_id from quiz_attempts limit 1`,
+      );
+      return row ? countAttempts(tx, row.enrollment_id, row.lesson_id) : -1;
+    });
+    expect(n).toBe(2); // the learning-flow test recorded a failed and a passing attempt
   });
 });

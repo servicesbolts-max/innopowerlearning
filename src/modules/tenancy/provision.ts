@@ -75,13 +75,18 @@ export function listPartners(tx: TenantTx, platformTenantId: string): Promise<Pa
   );
 }
 
-/** Creates an active partner with its settings, theme and preset flags. Returns its id. */
-export async function provisionTenant(
+/**
+ * Creates an active partner with its settings, theme and preset flags, then runs onCreated in
+ * that new tenant. 0012 limits app_platform inserts to a tenant created in this transaction.
+ */
+export async function provisionTenant<R>(
   tx: TenantTx,
   platformTenantId: string,
   input: ProvisionInput,
   actorUserId: string,
-): Promise<{ id: string } | { conflict: true }> {
+  /** Runs in the new tenant only (its first invitation and audit entry). */
+  onCreated: (tenantId: string) => Promise<R>,
+): Promise<{ id: string; created: R } | { conflict: true }> {
   const id = uuidv7();
   return asPlatform(tx, platformTenantId, id, async () => {
     const inserted = await tx
@@ -126,18 +131,8 @@ export async function provisionTenant(
         .insert(featureFlags)
         .values({ tenantId: id, id: uuidv7(), key, enabled, createdBy: actorUserId });
     }
-    return { id };
+    return { id, created: await onCreated(id) };
   });
-}
-
-/** Runs `fn` as app_platform inside the new tenant (its first invitation, its audit entry). */
-export function inTenantAsPlatform<T>(
-  tx: TenantTx,
-  platformTenantId: string,
-  tenantId: string,
-  fn: () => Promise<T>,
-): Promise<T> {
-  return asPlatform(tx, platformTenantId, tenantId, fn);
 }
 
 /** The partner list for the Console, read on the audited platform path. */

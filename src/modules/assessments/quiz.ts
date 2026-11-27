@@ -6,6 +6,23 @@ import { withTenant, type TenantTx } from "@/modules/tenancy";
 
 /** Quiz attempts (MVP slice M4). Grading happens here, against the stored answer key. */
 
+/** Attempts per learner and quiz (security review: unlimited retakes leak the key). */
+export const QUIZ_MAX_ATTEMPTS = 5;
+
+export async function countAttempts(tx: TenantTx, enrollmentId: string, lessonId: string) {
+  const [row] = await tx
+    .select({ n: count() })
+    .from(quizAttempts)
+    .where(
+      and(
+        eq(quizAttempts.enrollmentId, enrollmentId),
+        eq(quizAttempts.lessonId, lessonId),
+        isNull(quizAttempts.deletedAt),
+      ),
+    );
+  return row?.n ?? 0;
+}
+
 export async function recordAttempt(
   tx: TenantTx,
   tenantId: string,

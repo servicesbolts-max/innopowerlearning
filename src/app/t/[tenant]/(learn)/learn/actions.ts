@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { recordAttempt } from "@/modules/assessments";
+import { countAttempts, QUIZ_MAX_ATTEMPTS, recordAttempt } from "@/modules/assessments";
 import { ActionFailure, defineAction } from "@/modules/auth";
 import {
   completeLesson,
@@ -116,6 +116,9 @@ export const submitQuizAction = defineAction(
     const { course, enrollment } = await ownEnrollment(tx, input.courseId, actor.userId);
     const lesson = await loadLesson(tx, input.courseId, input.lessonId);
     if (!lesson || lesson.kind !== "quiz" || !lesson.quiz) throw new ActionFailure("invalid_input");
+    // A cap on attempts keeps the score from being used to work out the answer key.
+    const used = await countAttempts(tx, enrollment.id, lesson.id);
+    if (used >= QUIZ_MAX_ATTEMPTS) throw new ActionFailure("limit_reached");
     const attempt = await recordAttempt(tx, actor.tenantId, {
       enrollmentId: enrollment.id,
       lessonId: lesson.id,
@@ -131,8 +134,7 @@ export const submitQuizAction = defineAction(
       attemptId: attempt.id,
       score: attempt.score,
       passed: attempt.passed,
-      correctCount: attempt.correctCount,
-      total: attempt.total,
+      attemptsLeft: QUIZ_MAX_ATTEMPTS - used - 1,
     };
   },
 );

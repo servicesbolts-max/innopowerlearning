@@ -7,10 +7,11 @@ import {
   ActionFailure,
   createInvitation,
   defineAction,
+  platformTenantId,
   sendInvitationEmail,
   type ActionResult,
 } from "@/modules/auth";
-import { inTenantAsPlatform, provisionSchema, provisionTenant } from "@/modules/tenancy";
+import { provisionSchema, provisionTenant } from "@/modules/tenancy";
 import { tenantUrl } from "../../_lib/tenancy";
 
 type Created = { id: string; slug: string; invitationId: string; token: string; email: string };
@@ -31,16 +32,16 @@ const create = defineAction(
     }),
   },
   async ({ tx, input, actor }): Promise<Created> => {
-    const result = await provisionTenant(tx, actor.tenantId, input, actor.userId);
-    if ("conflict" in result) throw new ActionFailure("conflict");
-    const invitation = await inTenantAsPlatform(tx, actor.tenantId, result.id, async () => {
+    // Server actions run from any route: refuse unless this request is on the console host.
+    if (actor.tenantId !== (await platformTenantId())) throw new ActionFailure("forbidden");
+    const result = await provisionTenant(tx, actor.tenantId, input, actor.userId, async (id) => {
       const inv = await createInvitation(tx, {
-        tenantId: result.id,
+        tenantId: id,
         email: input.adminEmail,
         role: "tenant_admin",
         invitedBy: actor.userId,
       });
-      await recordAudit(tx, result.id, {
+      await recordAudit(tx, id, {
         action: "tenant.provisioned",
         target: { type: "invitation", id: inv.id },
         metadata: { role: "tenant_admin" },
@@ -49,6 +50,8 @@ const create = defineAction(
       });
       return inv;
     });
+    if ("conflict" in result) throw new ActionFailure("conflict");
+    const invitation = result.created;
     return {
       id: result.id,
       slug: input.slug,

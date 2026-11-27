@@ -4,7 +4,7 @@ import NextLink from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Banner, Button, cx, Icon, ProgressBar } from "@/design-system";
-import { attemptSummary } from "@/modules/assessments";
+import { attemptSummary, QUIZ_MAX_ATTEMPTS } from "@/modules/assessments";
 import {
   getPublishedCourse,
   loadPlayer,
@@ -176,14 +176,22 @@ export default async function PlayerPage({ params }: Props) {
                   {t("quiz.attempts", { count: attempts.attempts })}
                   {attempts.bestScore !== null &&
                     ` · ${t("quiz.best", { score: attempts.bestScore })}`}
+                  {` · ${t("quiz.attemptsLeft", { count: Math.max(0, QUIZ_MAX_ATTEMPTS - attempts.attempts) })}`}
                 </p>
               )}
-              <QuizForm
-                courseId={course.id}
-                lessonId={lesson.id}
-                quiz={publicQuiz(lesson.quiz)}
-                action={submitQuizAction}
-              />
+              {attempts && attempts.attempts >= QUIZ_MAX_ATTEMPTS ? (
+                <Banner
+                  tone={attempts.passed ? "success" : "warning"}
+                  title={attempts.passed ? t("quiz.passed") : t("errors.limit_reached")}
+                />
+              ) : (
+                <QuizForm
+                  courseId={course.id}
+                  lessonId={lesson.id}
+                  quiz={publicQuiz(lesson.quiz)}
+                  action={submitQuizAction}
+                />
+              )}
             </>
           ) : (
             <Banner tone="info" title={t("learn.notReady")} />

@@ -540,7 +540,8 @@
       "invalid_input": "Check the highlighted details and try again.",
       "forbidden": "You don't have permission to do that.",
       "conflict": "That already exists. Choose another value.",
-      "not_found": "We couldn’t find that. Check the details and try again."
+      "not_found": "We couldn’t find that. Check the details and try again.",
+      "limit_reached": "You have used all your attempts. Ask the course team for help."
     },
     "common": {
       "save": "Save",
@@ -712,7 +713,8 @@
       "best": "Best score: {score}%",
       "chooseOne": "Choose one answer",
       "chooseMany": "Choose all that apply",
-      "retry": "Try again"
+      "retry": "Try again",
+      "attemptsLeft": "{count, plural, =0 {No attempts left} one {# attempt left} other {# attempts left}}"
     },
     "certificate": {
       "title": "Certificate",

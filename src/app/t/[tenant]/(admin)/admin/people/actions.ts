@@ -37,6 +37,8 @@ const invite = defineAction(
     if (input.role === "tenant_admin" && !can(actor, "member.manage")) {
       throw new ActionFailure("forbidden");
     }
+    // Granting roles is a privilege change: never while a platform owner views as this person.
+    if (actor.impersonatedBy) throw new ActionFailure("forbidden");
     const created = await createInvitation(tx, {
       tenantId: actor.tenantId,
       email: input.email,

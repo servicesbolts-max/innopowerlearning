@@ -39,7 +39,6 @@ export {
   type BrandingInput,
 } from "./branding";
 export {
-  inTenantAsPlatform,
   listAllPartners,
   listPartners,
   provisionSchema,

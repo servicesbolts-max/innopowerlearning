@@ -109,6 +109,7 @@ describe("provisioning", () => {
           adminEmail: "a@example.org",
         },
         USER,
+        async () => null,
       ),
     );
     expect("id" in result).toBe(true);
@@ -129,6 +130,7 @@ describe("provisioning", () => {
         PLATFORM,
         { slug, name: "Dup", preset: "university", accent: "#7B2D8E", adminEmail: "a@example.org" },
         USER,
+        async () => null,
       ),
     );
     expect(again).toEqual({ conflict: true });
@@ -141,12 +143,40 @@ describe("provisioning", () => {
         PLATFORM,
         { slug, name: "Dup", preset: "university", accent: "#7B2D8E", adminEmail: "a@example.org" },
         USER,
+        async () => null,
       );
       return tx.execute(
         sql`select current_user as role, current_setting('app.tenant_id') as tenant`,
       );
     });
     expect(role[0]).toEqual({ role: "app_user", tenant: PLATFORM });
+  });
+
+  it("app_platform cannot read or write an existing tenant's provisioning tables", async () => {
+    const asPlatformIn = (tenantId: string, query: ReturnType<typeof sql>) =>
+      withTenant({ tenantId: PLATFORM }, async (tx) => {
+        await tx.execute(sql`set local role app_platform`);
+        await tx.execute(sql`select set_config('app.tenant_id', ${tenantId}, true)`);
+        return tx.execute(query);
+      });
+    for (const table of ["invitations", "tenant_settings", "tenant_themes", "feature_flags"]) {
+      await expectDbError(
+        asPlatformIn(A, sql`select * from ${sql.identifier(table)}`),
+        /permission denied/,
+      );
+    }
+    await expectDbError(
+      asPlatformIn(
+        A,
+        sql`insert into invitations (tenant_id, email, role, token_hash, expires_at)
+          values (${A}, 'x@example.org', 'tenant_admin', ${"a".repeat(64)}, now() + interval '1 day')`,
+      ),
+      /row-level security/,
+    );
+    await expectDbError(
+      asPlatformIn(A, sql`insert into audit_logs (tenant_id, action) values (${A}, 'x.forged')`),
+      /row-level security/,
+    );
   });
 
   it("app_platform cannot read tenant data or write into an existing tenant", async () => {
